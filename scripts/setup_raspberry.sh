@@ -33,7 +33,7 @@ apt-get install -y -qq \
     libopencv-dev python3-opencv \
     php-cli \
     git curl wget \
-    libatlas-base-dev \
+    libopenblas-dev \
     v4l-utils
 
 # ── 3. Configurar rede estática eth0 ─────────────────────────────────────────
