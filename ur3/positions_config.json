@@ -1,0 +1,50 @@
+{
+  "_comment": "Coordenadas cartesianas das 9 células do tabuleiro no referencial da base do UR3",
+  "_format": "[X, Y, Z, Rx, Ry, Rz] em metros e radianos",
+  "_instructions": [
+    "1. Posicione o robô manualmente sobre cada ponto com o Teach Pendant (Move → TCP)",
+    "2. Anote X, Y, Z mostrados em 'Pose' e substitua os valores abaixo",
+    "3. pick: posição EXATA onde a garra fecha sobre a peça (sempre a mesma)",
+    "4. board.z_place: altura Z onde a garra ABRE para soltar a peça no tabuleiro",
+    "   A abordagem é sempre z_place + 0.050 (50 mm acima), calculada automaticamente",
+    "5. Execute board_calibration.py para calibrar a câmera depois"
+  ],
+
+  "home_pose": {
+    "description": "Posição inicial segura do robô — retorna aqui após cada jogada",
+    "joint_angles": [-1.5708, -1.5708, -1.5708, -1.5708, 1.5708, 0.0],
+    "_tip": "Anote os ângulos de junta (aba 'Joint') no Teach Pendant com o robô na posição home"
+  },
+
+  "pick": {
+    "description": "Posição FIXA de retirada da peça — sempre a mesma, independente de quantas peças já foram pegas",
+    "x": 0.450,
+    "y": -0.150,
+    "z": 0.130,
+    "rx": 3.14159,
+    "ry": 0.0,
+    "rz": 0.0,
+    "_tip": "Posicione a garra fechando sobre a peça e anote X, Y, Z do TCP"
+  },
+
+  "board": {
+    "description": "As 9 células do tabuleiro (indexadas 0-8, linha a linha, esq→dir, cima→baixo)",
+    "z_place": 0.110,
+    "_approach_offset_m": 0.050,
+    "_tip": "z_approach é calculado automaticamente como z_place + 0.050 (50 mm)",
+    "orientation": [3.14159, 0.0, 0.0],
+    "_orientation_tip": "Orientação da garra apontando para baixo — ajuste Rx se necessário",
+
+    "cells": {
+      "0": {"x": 0.250, "y": 0.150, "label": "superior esquerdo"},
+      "1": {"x": 0.350, "y": 0.150, "label": "superior centro"},
+      "2": {"x": 0.450, "y": 0.150, "label": "superior direito"},
+      "3": {"x": 0.250, "y": 0.050, "label": "meio esquerdo"},
+      "4": {"x": 0.350, "y": 0.050, "label": "meio centro"},
+      "5": {"x": 0.450, "y": 0.050, "label": "meio direito"},
+      "6": {"x": 0.250, "y": -0.050, "label": "inferior esquerdo"},
+      "7": {"x": 0.350, "y": -0.050, "label": "inferior centro"},
+      "8": {"x": 0.450, "y": -0.050, "label": "inferior direito"}
+    }
+  }
+}

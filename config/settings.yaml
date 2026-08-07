@@ -1,0 +1,73 @@
+# =============================================
+# UR3 Jogo da Velha - Configuração Central
+# =============================================
+#
+# TOPOLOGIA DE REDE:
+#   Raspberry Pi 3B+ (eth0: 192.168.1.10) ──cabo──▶ UR3 (192.168.1.100)
+#   Raspberry Pi 3B+ (wlan0: IP via DHCP)  ──wifi──▶ Dashboard (porta 1880)
+#   Todos os serviços rodam no Raspberry Pi:
+#     - Mosquitto MQTT Broker (porta 1883)
+#     - Node-RED (porta 1880)
+#     - Python detector.py (visão computacional)
+#
+# CONFIGURAÇÃO DE REDE DO UR3 (Teach Pendant):
+#   Setup → Network → IP: 192.168.1.100 | Mask: 255.255.255.0
+#
+# CONFIGURAÇÃO DO RASPBERRY PI (eth0 estático):
+#   Adicionar em /etc/dhcpcd.conf:
+#     interface eth0
+#     static ip_address=192.168.1.10/24
+
+robot:
+  ip: "192.168.1.100"       # IP do UR3 (configurar no Teach Pendant)
+  port: 30002               # Primary Interface — envio de URScript
+  speed: 0.3                # Velocidade (m/s) — comece baixo, aumente após testes
+  acceleration: 0.5         # Aceleração (m/s²)
+  blend_radius: 0.01        # Raio de blend entre movimentos (m)
+
+gripper:
+  model: "onrobot_rg2"      # onrobot_rg2 | onrobot_rg6
+  force: 20                 # Força de aperto (N)
+  open_width: 100           # Largura para abrir (mm) - RG2 max=110, RG6 max=160
+  close_width: 25           # Largura para fechar (mm) - ajustar ao tamanho da peça
+  wait_time: 1.0            # Tempo de espera após comando da garra (s)
+
+camera:
+  index: 0                  # Índice da câmera USB (0=padrão)
+  width: 1280               # Resolução horizontal
+  height: 720               # Resolução vertical
+  fps: 30                   # Frames por segundo
+  calibration_file: "config/calibration.json"
+
+detection:
+  # Faixas HSV para peça do JOGADOR (X azul)
+  player_hsv_lower: [100, 80, 80]
+  player_hsv_upper: [130, 255, 255]
+  # Faixas HSV para peça do ROBÔ (O laranja)
+  robot_hsv_lower: [5, 100, 100]
+  robot_hsv_upper: [20, 255, 255]
+  min_area: 800             # Área mínima de contorno para considerar uma peça (px²)
+  stable_frames: 8          # Frames estáveis antes de confirmar uma nova peça
+
+# Configurações do servidor Web e API
+web:
+  api_host: "0.0.0.0"       # IP de escuta da API Python (Flask)
+  api_port: 5000            # Porta da API Python (Flask)
+  web_host: "0.0.0.0"       # IP de escuta do servidor PHP
+  web_port: 8000            # Porta do servidor PHP
+
+# Obsoleto: MQTT não é mais necessário (removido Node-RED)
+mqtt:
+  enabled: false
+  broker: "localhost"
+  port: 1883
+  topic_player_move: "ur3/player_move"
+  topic_robot_move: "ur3/robot_move"
+  topic_game_state: "ur3/game_state"
+  topic_board_image: "ur3/board_image"
+
+game:
+  player_symbol: "X"       # Símbolo do jogador humano
+  robot_symbol: "O"         # Símbolo do robô
+  robot_starts: false       # True = robô começa, False = jogador começa
+
