@@ -37,7 +37,7 @@ class BoardCalibrator:
         self.homography = None    # Matriz de homografia
         self.cap = None
         self.frame = None
-        self.window_name = "UR3 - Calibração do Tabuleiro"
+        self.window_name = "UR3 - Calibracao do Tabuleiro"
 
     def mouse_callback(self, event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONDOWN and len(self.points) < 4:
