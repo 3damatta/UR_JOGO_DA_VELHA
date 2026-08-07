@@ -136,7 +136,7 @@ class BoardCalibrator:
         }
         with open(CALIBRATION_FILE, 'w') as f:
             json.dump(data, f, indent=2)
-        print(f"\n✓ Calibração salva em: {CALIBRATION_FILE}")
+        print(f"\n[OK] Calibracao salva em: {CALIBRATION_FILE}")
 
     def run(self):
         self.cap = cv2.VideoCapture(self.camera_index)
@@ -144,14 +144,14 @@ class BoardCalibrator:
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
         if not self.cap.isOpened():
-            print(f"✗ Não foi possível abrir câmera índice {self.camera_index}")
+            print(f"[ERRO] Nao foi possivel abrir camera indice {self.camera_index}")
             return False
 
         cv2.namedWindow(self.window_name, cv2.WINDOW_NORMAL)
         cv2.setMouseCallback(self.window_name, self.mouse_callback)
 
-        print("\n=== Calibração do Tabuleiro ===")
-        print("Clique nos 4 cantos do tabuleiro físico na ordem:")
+        print("\n=== Calibracao do Tabuleiro ===")
+        print("Clique nos 4 cantos do tabuleiro fisico na ordem:")
         print("  1. Superior-Esquerdo")
         print("  2. Superior-Direito")
         print("  3. Inferior-Direito")
@@ -160,7 +160,7 @@ class BoardCalibrator:
         while True:
             ret, frame = self.cap.read()
             if not ret:
-                print("✗ Falha ao capturar frame")
+                print("[ERRO] Falha ao capturar frame")
                 break
 
             self.frame = frame
@@ -173,7 +173,7 @@ class BoardCalibrator:
             elif key == ord('r'):
                 self.points = []
                 self.homography = None
-                print("\n↻ Refazendo calibração...")
+                print("\n[REFAZENDO] Refazendo calibracao...")
             elif key == ord('s') and self.homography is not None:
                 self.save()
                 break
