@@ -148,6 +148,13 @@ class BoardCalibrator:
             return False
 
         cv2.namedWindow(self.window_name, cv2.WINDOW_NORMAL)
+        
+        # Le e exibe um primeiro frame para forcar a criacao do handler da janela pelo Qt/OpenCV
+        ret, frame = self.cap.read()
+        if ret:
+            cv2.imshow(self.window_name, frame)
+            cv2.waitKey(50)
+            
         cv2.setMouseCallback(self.window_name, self.mouse_callback)
 
         print("\n=== Calibracao do Tabuleiro ===")
