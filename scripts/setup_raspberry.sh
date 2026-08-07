@@ -34,7 +34,8 @@ apt-get install -y -qq \
     php-cli \
     git curl wget \
     libatlas-base-dev \
-    v4l-utils
+    v4l-utils \
+    cmake libboost-all-dev
 
 # ── 3. Configurar rede estática eth0 ─────────────────────────────────────────
 echo ""
