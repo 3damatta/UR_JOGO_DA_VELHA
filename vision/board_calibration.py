@@ -15,12 +15,16 @@ INSTRUÇÕES:
     4. Pressione 'S' para salvar | 'R' para refazer | 'Q' para sair
 """
 
-import cv2
-import numpy as np
-import json
 import os
 import sys
 import time
+
+# Força o OpenCV/Qt a usar o backend X11 (XCB) no Raspberry Pi para evitar falhas no Wayland
+os.environ["QT_QPA_PLATFORM"] = "xcb"
+
+import cv2
+import numpy as np
+import json
 
 CALIBRATION_FILE = "config/calibration.json"
 BOARD_SIZE = 300  # Tamanho do tabuleiro normalizado (px)
