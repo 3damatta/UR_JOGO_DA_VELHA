@@ -34,7 +34,8 @@ apt-get install -y -qq \
     php-cli \
     git curl wget \
     libopenblas-dev \
-    v4l-utils
+    v4l-utils \
+    qtwayland5 libxcb-xinerama0
 
 # ── 3. Configurar rede estática eth0 ─────────────────────────────────────────
 echo ""
