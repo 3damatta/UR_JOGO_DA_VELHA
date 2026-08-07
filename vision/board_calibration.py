@@ -20,6 +20,7 @@ import numpy as np
 import json
 import os
 import sys
+import time
 
 CALIBRATION_FILE = "config/calibration.json"
 BOARD_SIZE = 300  # Tamanho do tabuleiro normalizado (px)
@@ -149,11 +150,22 @@ class BoardCalibrator:
 
         cv2.namedWindow(self.window_name, cv2.WINDOW_NORMAL)
         
-        # Le e exibe um primeiro frame para forcar a criacao do handler da janela pelo Qt/OpenCV
-        ret, frame = self.cap.read()
-        if ret:
+        # Loop de warm-up para aguardar um frame valido da camera USB
+        frame = None
+        for _ in range(60):
+            ret, temp_frame = self.cap.read()
+            if ret and temp_frame is not None:
+                frame = temp_frame
+                break
+            time.sleep(0.03)
+            
+        if frame is not None:
             cv2.imshow(self.window_name, frame)
-            cv2.waitKey(50)
+            cv2.waitKey(100)
+        else:
+            print("[ERRO] Nao foi possivel ler nenhum frame valido da camera")
+            self.cap.release()
+            return False
             
         cv2.setMouseCallback(self.window_name, self.mouse_callback)
 
