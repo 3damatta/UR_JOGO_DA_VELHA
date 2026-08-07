@@ -3,7 +3,7 @@
 Sistema integrado onde um robô Universal Robots UR3 joga Jogo da Velha contra um humano, usando visão computacional (OpenCV), um orquestrador central em Python (Flask) e um Dashboard Web em PHP.
 
 > [!NOTE]
-> Esta versão foi simplificada e otimizada: **não necessita mais de Node-RED nem broker MQTT (Mosquitto)**, economizando significativamente os recursos de CPU e memória do Raspberry Pi 3B+.
+> Esta versão foi simplificada e otimizada, economizando significativamente os recursos de CPU e memória do Raspberry Pi 3B+.
 
 ---
 
