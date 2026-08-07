@@ -94,10 +94,13 @@ Valide a conexão executando no Raspberry Pi:
 ping 192.168.1.100
 ```
 
-### Passo 3 — Executar Script de Setup do Pi
+### Passo 3 — Baixar o Projeto e Executar o Setup no Pi
 
-Transfira a pasta do projeto para o Raspberry Pi e execute o setup:
+Acesse o terminal do seu Raspberry Pi e execute os seguintes comandos para clonar o repositório público do GitHub e iniciar o instalador:
+
 ```bash
+git clone https://github.com/3damatta/UR_JOGO_DA_VELHA.git
+cd UR_JOGO_DA_VELHA
 chmod +x scripts/setup_raspberry.sh
 sudo bash scripts/setup_raspberry.sh
 ```

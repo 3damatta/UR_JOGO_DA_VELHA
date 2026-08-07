@@ -47,9 +47,10 @@ No painel do robô UR3 (Teach Pendant):
 
 O script automatizado [setup_raspberry.sh](file:///c:/Users/PC/OneDrive/Documentos/PROJETOS/Nova%20pasta/ur3_tictactoe/scripts/setup_raspberry.sh) realiza todo o processo de setup.
 
-1. Navegue até a pasta do projeto:
+1. Baixe o projeto clonando o repositório público do GitHub e acesse a pasta:
    ```bash
-   cd /home/pi/ur3_tictactoe
+   git clone https://github.com/3damatta/UR_JOGO_DA_VELHA.git
+   cd UR_JOGO_DA_VELHA
    ```
 2. Dê permissão de execução ao script:
    ```bash
