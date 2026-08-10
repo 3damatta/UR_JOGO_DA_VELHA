@@ -130,26 +130,26 @@ class UR3Controller:
         home   = self.pos['home_pose']
         orient = board['orientation']
 
-        # ── Coordenadas do pick
+        # -- Coordenadas do pick
         px = pick['x']
         py = pick['y']
         pz = pick['z']
         pz_above = pz + APPROACH_OFFSET_M        # 50 mm acima do pick
+        pick_orient = [pick['rx'], pick['ry'], pick['rz']]
 
-        pick_above_pose = self._pose(px, py, pz_above, orient)  # acima
-        pick_pose       = self._pose(px, py, pz,       orient)  # exato
+        pick_above_pose = self._pose(px, py, pz_above, pick_orient)  # acima
+        pick_pose       = self._pose(px, py, pz,       pick_orient)  # exato
 
-        # ── Coordenadas da célula destino
+        # -- Coordenadas da celula destino
         cell_data = board['cells'][str(cell)]
         cx = cell_data['x']
         cy = cell_data['y']
         cz_place   = board['z_place']
-        cz_above   = cz_place + APPROACH_OFFSET_M   # 50 mm acima da célula
+        cz_above   = cz_place + APPROACH_OFFSET_M   # 50 mm acima da celula
 
         cell_above_pose = self._pose(cx, cy, cz_above,  orient)  # acima
         cell_place_pose = self._pose(cx, cy, cz_place,  orient)  # exato
 
-        label = cell_data['label']
         lines = [f"def place_piece_cell_{cell}():\n"]
 
         # [1] HOME
@@ -160,32 +160,32 @@ class UR3Controller:
         lines.append("\n  # [2] Ir para 50mm acima do pick\n")
         lines.append(self._movel(pick_above_pose, blend=self.blend))
 
-        # [3] Descer 50mm linearmente até o pick
-        lines.append("\n  # [3] Descer 50mm linear Z → posição de pick\n")
+        # [3] Descer 50mm linearmente ate o pick
+        lines.append("\n  # [3] Descer 50mm linear Z -> posicao de pick\n")
         lines.append(self._movel(pick_pose))
 
         # [4] Fechar garra
-        lines.append("\n  # [4] Fechar garra — pegar peça\n")
+        lines.append("\n  # [4] Fechar garra - pegar peca\n")
         lines.append(self._gripper_close())
 
-        # [5] Subir 50mm linearmente (saída do pick)
-        lines.append("\n  # [5] Subir 50mm linear Z — sair do pick\n")
+        # [5] Subir 50mm linearmente (saida do pick)
+        lines.append("\n  # [5] Subir 50mm linear Z - sair do pick\n")
         lines.append(self._movel(pick_above_pose))
 
-        # [6] Ir para 50mm ACIMA da célula destino
-        lines.append(f"\n  # [6] Ir para 50mm acima da célula {cell} ({label})\n")
+        # [6] Ir para 50mm ACIMA da celula destino
+        lines.append(f"\n  # [6] Ir para 50mm acima da celula {cell}\n")
         lines.append(self._movel(cell_above_pose, blend=self.blend))
 
-        # [7] Descer 50mm linearmente até a posição de pouso
-        lines.append(f"\n  # [7] Descer 50mm linear Z → célula {cell}\n")
+        # [7] Descer 50mm linearmente ate a posicao de pouso
+        lines.append(f"\n  # [7] Descer 50mm linear Z -> celula {cell}\n")
         lines.append(self._movel(cell_place_pose))
 
         # [8] Abrir garra
-        lines.append("\n  # [8] Abrir garra — soltar peça\n")
+        lines.append("\n  # [8] Abrir garra - soltar peca\n")
         lines.append(self._gripper_open())
 
-        # [9] Subir 50mm linearmente (saída da célula)
-        lines.append("\n  # [9] Subir 50mm linear Z — sair da célula\n")
+        # [9] Subir 50mm linearmente (saida da celula)
+        lines.append("\n  # [9] Subir 50mm linear Z - sair da celula\n")
         lines.append(self._movel(cell_above_pose))
 
         # [10] HOME
