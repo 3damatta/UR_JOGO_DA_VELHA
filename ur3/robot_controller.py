@@ -89,21 +89,15 @@ class UR3Controller:
 
     def _gripper_close(self) -> str:
         """Fecha a garra OnRobot (agarra a peca)."""
-        force = GRIPPER_CFG['force']
-        width = GRIPPER_CFG['close_width']
         wait  = GRIPPER_CFG['wait_time']
         return (
-            f"  rg_grip({width}, {force}, 0)\n"
             f"  sleep({wait})\n"
         )
 
     def _gripper_open(self) -> str:
         """Abre a garra OnRobot (solta a peca)."""
-        force = GRIPPER_CFG['force']
-        width = GRIPPER_CFG['open_width']
         wait  = GRIPPER_CFG['wait_time']
         return (
-            f"  rg_grip({width}, {force}, 0)\n"
             f"  sleep({wait})\n"
         )
 
