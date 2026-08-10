@@ -12,39 +12,39 @@
 
   "home_pose": {
     "description": "Posição inicial segura do robô — retorna aqui após cada jogada",
-    "joint_angles": [-1.5708, -1.5708, -1.5708, -1.5708, 1.5708, 0.0],
+    "joint_angles": [-0.5678, -1.7911, 1.5743, -1.3551, -1.5677, 0.1906],
     "_tip": "Anote os ângulos de junta (aba 'Joint') no Teach Pendant com o robô na posição home"
   },
 
   "pick": {
     "description": "Posição FIXA de retirada da peça — sempre a mesma, independente de quantas peças já foram pegas",
-    "x": 0.450,
-    "y": -0.150,
-    "z": 0.130,
-    "rx": 3.14159,
-    "ry": 0.0,
-    "rz": 0.0,
+    "x": 0.13917,
+    "y": -0.24352,
+    "z": -0.33450,
+    "rx": 0.222,
+    "ry": 3.014,
+    "rz": -0.722,
     "_tip": "Posicione a garra fechando sobre a peça e anote X, Y, Z do TCP"
   },
 
   "board": {
     "description": "As 9 células do tabuleiro (indexadas 0-8, linha a linha, esq→dir, cima→baixo)",
-    "z_place": 0.110,
+    "z_place": -0.37955,
     "_approach_offset_m": 0.050,
     "_tip": "z_approach é calculado automaticamente como z_place + 0.050 (50 mm)",
-    "orientation": [3.14159, 0.0, 0.0],
+    "orientation": [1.697, -2.644, 0.0],
     "_orientation_tip": "Orientação da garra apontando para baixo — ajuste Rx se necessário",
 
     "cells": {
-      "0": {"x": 0.250, "y": 0.150, "label": "superior esquerdo"},
-      "1": {"x": 0.350, "y": 0.150, "label": "superior centro"},
-      "2": {"x": 0.450, "y": 0.150, "label": "superior direito"},
-      "3": {"x": 0.250, "y": 0.050, "label": "meio esquerdo"},
-      "4": {"x": 0.350, "y": 0.050, "label": "meio centro"},
-      "5": {"x": 0.450, "y": 0.050, "label": "meio direito"},
-      "6": {"x": 0.250, "y": -0.050, "label": "inferior esquerdo"},
-      "7": {"x": 0.350, "y": -0.050, "label": "inferior centro"},
-      "8": {"x": 0.450, "y": -0.050, "label": "inferior direito"}
+      "0": {"x": 0.24053, "y": 0.02074, "label": "superior esquerdo"},
+      "1": {"x": 0.31124, "y": 0.01274, "label": "superior centro"},
+      "2": {"x": 0.37766, "y": 0.00761, "label": "superior direito"},
+      "3": {"x": 0.24053, "y": -0.05115, "label": "meio esquerdo"},
+      "4": {"x": 0.31124, "y": -0.05304, "label": "meio centro"},
+      "5": {"x": 0.37554, "y": -0.05619, "label": "meio direito"},
+      "6": {"x": 0.23979, "y": -0.12037, "label": "inferior esquerdo"},
+      "7": {"x": 0.30187, "y": -0.12388, "label": "inferior centro"},
+      "8": {"x": 0.37162, "y": -0.12390, "label": "inferior direito"}
     }
   }
 }

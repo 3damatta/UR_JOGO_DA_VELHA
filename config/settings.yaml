@@ -28,8 +28,8 @@ robot:
 gripper:
   model: "onrobot_rg2"      # onrobot_rg2 | onrobot_rg6
   force: 20                 # Força de aperto (N)
-  open_width: 100           # Largura para abrir (mm) - RG2 max=110, RG6 max=160
-  close_width: 25           # Largura para fechar (mm) - ajustar ao tamanho da peça
+  open_width: 50           # Largura para abrir (mm) - RG2 max=110, RG6 max=160
+  close_width: 38           # Largura para fechar (mm) - ajustar ao tamanho da peça
   wait_time: 1.0            # Tempo de espera após comando da garra (s)
 
 camera:
