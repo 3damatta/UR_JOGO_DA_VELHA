@@ -1,50 +1,62 @@
 {
-  "_comment": "Coordenadas cartesianas das 9 células do tabuleiro no referencial da base do UR3",
-  "_format": "[X, Y, Z, Rx, Ry, Rz] em metros e radianos",
+  "_comment": "Coordenadas das articulacoes em radianos obtidas do Teach Pendant (independente de Feature)",
+  "_format": "Angulos das 6 juntas [Base, Ombro, Cotovelo, Pulso 1, Pulso 2, Pulso 3] em radianos",
   "_instructions": [
-    "1. Posicione o robô manualmente sobre cada ponto com o Teach Pendant (Move → TCP)",
-    "2. Anote X, Y, Z mostrados em 'Pose' e substitua os valores abaixo",
-    "3. pick: posição EXATA onde a garra fecha sobre a peça (sempre a mesma)",
-    "4. board.z_place: altura Z onde a garra ABRE para soltar a peça no tabuleiro",
-    "   A abordagem é sempre z_place + 0.050 (50 mm acima), calculada automaticamente",
-    "5. Execute board_calibration.py para calibrar a câmera depois"
+    "1. Posicione o robo manualmente sobre cada ponto com o Teach Pendant",
+    "2. Anote os 6 angulos de juntas na aba 'Articulacao' (Joint) em graus",
+    "3. Converta para radianos (graus * pi / 180) e atualize os valores abaixo"
   ],
 
   "home_pose": {
-    "description": "Posição inicial segura do robô — retorna aqui após cada jogada",
-    "joint_angles": [-0.5678, -1.7911, 1.5743, -1.3551, -1.5677, 0.1906],
-    "_tip": "Anote os ângulos de junta (aba 'Joint') no Teach Pendant com o robô na posição home"
+    "description": "Posicao inicial segura do robo",
+    "joint_angles": [-0.56780, -1.79110, 1.57430, -1.35510, -1.56770, 0.19060]
   },
 
   "pick": {
-    "description": "Posição FIXA de retirada da peça — sempre a mesma, independente de quantas peças já foram pegas",
-    "x": 0.13917,
-    "y": -0.24352,
-    "z": -0.33450,
-    "rx": 0.222,
-    "ry": 3.014,
-    "rz": -0.722,
-    "_tip": "Posicione a garra fechando sobre a peça e anote X, Y, Z do TCP"
+    "description": "Posicao de retirada da peca no estoque",
+    "joint_angles": [-0.53425, -2.38587, 2.44608, -2.10138, -1.60553, 0.21764]
   },
 
   "board": {
-    "description": "As 9 células do tabuleiro (indexadas 0-8, linha a linha, esq→dir, cima→baixo)",
-    "z_place": -0.37955,
+    "description": "As 9 celulas do tabuleiro (indexadas 0-8)",
     "_approach_offset_m": 0.050,
-    "_tip": "z_approach é calculado automaticamente como z_place + 0.050 (50 mm)",
-    "orientation": [1.697, -2.644, 0.0],
-    "_orientation_tip": "Orientação da garra apontando para baixo — ajuste Rx se necessário",
-
     "cells": {
-      "0": {"x": 0.24053, "y": 0.02074, "label": "superior esquerdo"},
-      "1": {"x": 0.31124, "y": 0.01274, "label": "superior centro"},
-      "2": {"x": 0.37766, "y": 0.00761, "label": "superior direito"},
-      "3": {"x": 0.24053, "y": -0.05115, "label": "meio esquerdo"},
-      "4": {"x": 0.31124, "y": -0.05304, "label": "meio centro"},
-      "5": {"x": 0.37554, "y": -0.05619, "label": "meio direito"},
-      "6": {"x": 0.23979, "y": -0.12037, "label": "inferior esquerdo"},
-      "7": {"x": 0.30187, "y": -0.12388, "label": "inferior centro"},
-      "8": {"x": 0.37162, "y": -0.12390, "label": "inferior direito"}
+      "0": {
+        "joint_angles": [-1.20533, -1.95860, 2.14867, -1.76209, -1.56870, -0.05672],
+        "label": "superior esquerdo"
+      },
+      "1": {
+        "joint_angles": [-1.11143, -1.60622, 1.87553, -1.84130, -1.56766, 0.03718],
+        "label": "superior centro"
+      },
+      "2": {
+        "joint_angles": [-1.05261, -1.31790, 1.54985, -1.80380, -1.56678, 0.09599],
+        "label": "superior direito"
+      },
+      "3": {
+        "joint_angles": [-1.48911, -1.93312, 2.13419, -1.77291, -1.56870, -0.34051],
+        "label": "meio esquerdo"
+      },
+      "4": {
+        "joint_angles": [-1.31493, -1.58650, 1.85860, -1.84409, -1.56766, -0.16633],
+        "label": "meio centro"
+      },
+      "5": {
+        "joint_angles": [-1.21929, -1.30952, 1.53886, -1.80136, -1.56678, -0.07069],
+        "label": "meio direito"
+      },
+      "6": {
+        "joint_angles": [-1.69332, -1.81287, 2.05565, -1.81459, -1.56835, -0.54454],
+        "label": "inferior esquerdo"
+      },
+      "7": {
+        "joint_angles": [-1.52088, -1.53798, 1.81390, -1.84793, -1.56749, -0.37228],
+        "label": "inferior centro"
+      },
+      "8": {
+        "joint_angles": [-1.38143, -1.25699, 1.47550, -1.79036, -1.56835, -0.23265],
+        "label": "inferior direito"
+      }
     }
   }
 }
