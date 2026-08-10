@@ -93,7 +93,7 @@ class UR3Controller:
         width = GRIPPER_CFG['close_width']
         wait  = GRIPPER_CFG['wait_time']
         return (
-            f"  rg_grip({width}, {force})\n"
+            f"  rg_grip({width}, {force}, 0)\n"
             f"  sleep({wait})\n"
         )
 
@@ -103,7 +103,7 @@ class UR3Controller:
         width = GRIPPER_CFG['open_width']
         wait  = GRIPPER_CFG['wait_time']
         return (
-            f"  rg_grip({width}, {force})\n"
+            f"  rg_grip({width}, {force}, 0)\n"
             f"  sleep({wait})\n"
         )
 
