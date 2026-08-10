@@ -88,24 +88,22 @@ class UR3Controller:
         return f"  movej([{jstr}], a={a}, v={v})\n"
 
     def _gripper_close(self) -> str:
-        """Fecha a garra OnRobot (agarra a peça)."""
+        """Fecha a garra OnRobot (agarra a peca)."""
         force = GRIPPER_CFG['force']
         width = GRIPPER_CFG['close_width']
         wait  = GRIPPER_CFG['wait_time']
         return (
-            f"  rg_grip(force={force}, width={width},"
-            f" depth_compensation=False, slave=False)\n"
+            f"  rg_grip({width}, {force})\n"
             f"  sleep({wait})\n"
         )
 
     def _gripper_open(self) -> str:
-        """Abre a garra OnRobot (solta a peça)."""
+        """Abre a garra OnRobot (solta a peca)."""
         force = GRIPPER_CFG['force']
         width = GRIPPER_CFG['open_width']
         wait  = GRIPPER_CFG['wait_time']
         return (
-            f"  rg_grip(force={force}, width={width},"
-            f" depth_compensation=False, slave=False)\n"
+            f"  rg_grip({width}, {force})\n"
             f"  sleep({wait})\n"
         )
 
