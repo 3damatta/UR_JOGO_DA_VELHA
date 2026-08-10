@@ -89,72 +89,60 @@ class UR3Controller:
 
     def _gripper_close(self) -> str:
         """Fecha a garra OnRobot (agarra a peca)."""
+        force = GRIPPER_CFG['force']
+        width = GRIPPER_CFG['close_width']
         wait  = GRIPPER_CFG['wait_time']
         return (
+            f"  rg_grip({width}, {force}, 0)\n"
             f"  sleep({wait})\n"
         )
 
     def _gripper_open(self) -> str:
         """Abre a garra OnRobot (solta a peca)."""
+        force = GRIPPER_CFG['force']
+        width = GRIPPER_CFG['open_width']
         wait  = GRIPPER_CFG['wait_time']
         return (
+            f"  rg_grip({width}, {force}, 0)\n"
             f"  sleep({wait})\n"
         )
 
     # ── Geração do URScript Principal ─────────────────────────────────────────
     def build_place_script(self, cell: int) -> str:
         """
-        Gera o URScript completo com sequência anti-colisão:
-
-          [1]  HOME
-          [2]  50mm ACIMA do pick       (Z_pick + 0.050)
-          [3]  Desce 50mm → pick        (linear Z)
-          [4]  Fecha garra              (pega a peça)
-          [5]  Sobe 50mm → above pick   (linear Z)
-          [6]  50mm ACIMA da célula     (Z_place + 0.050)
-          [7]  Desce 50mm → célula      (linear Z)
-          [8]  Abre garra               (solta a peça)
-          [9]  Sobe 50mm               (linear Z)
-          [10] HOME
+        Gera o URScript completo usando angulos de junta e calculando
+        cinematica direta (forward kinematics) no robo para os movimentos lineares.
         """
-        pick   = self.pos['pick']
-        board  = self.pos['board']
-        home   = self.pos['home_pose']
-        orient = board['orientation']
+        home        = self.pos['home_pose']['joint_angles']
+        pick        = self.pos['pick']['joint_angles']
+        cell_joints = self.pos['board']['cells'][str(cell)]['joint_angles']
 
-        # -- Coordenadas do pick
-        px = pick['x']
-        py = pick['y']
-        pz = pick['z']
-        pz_above = pz + APPROACH_OFFSET_M        # 50 mm acima do pick
-        pick_orient = [pick['rx'], pick['ry'], pick['rz']]
-
-        pick_above_pose = self._pose(px, py, pz_above, pick_orient)  # acima
-        pick_pose       = self._pose(px, py, pz,       pick_orient)  # exato
-
-        # -- Coordenadas da celula destino
-        cell_data = board['cells'][str(cell)]
-        cx = cell_data['x']
-        cy = cell_data['y']
-        cz_place   = board['z_place']
-        cz_above   = cz_place + APPROACH_OFFSET_M   # 50 mm acima da celula
-
-        cell_above_pose = self._pose(cx, cy, cz_above,  orient)  # acima
-        cell_place_pose = self._pose(cx, cy, cz_place,  orient)  # exato
+        # Converte as listas de juntas para strings do URScript
+        home_str = ", ".join(f"{j:.5f}" for j in home)
+        pick_str = ", ".join(f"{j:.5f}" for j in pick)
+        cell_str = ", ".join(f"{j:.5f}" for j in cell_joints)
 
         lines = [f"def place_piece_cell_{cell}():\n"]
 
+        # Calcular poses cartesianas na Base via get_forward_kin
+        lines.append(f"  pick_joints = [{pick_str}]\n")
+        lines.append(f"  cell_joints = [{cell_str}]\n")
+        lines.append("  pick_pose = get_forward_kin(pick_joints)\n")
+        lines.append("  cell_pose = get_forward_kin(cell_joints)\n")
+        lines.append("  pick_above = p[pick_pose[0], pick_pose[1], pick_pose[2] + 0.050, pick_pose[3], pick_pose[4], pick_pose[5]]\n")
+        lines.append("  cell_above = p[cell_pose[0], cell_pose[1], cell_pose[2] + 0.050, cell_pose[3], cell_pose[4], cell_pose[5]]\n")
+
         # [1] HOME
-        lines.append("  # [1] HOME\n")
-        lines.append(self._movej(home['joint_angles']))
+        lines.append("\n  # [1] HOME\n")
+        lines.append(f"  movej([{home_str}], a=1.2, v=1.0)\n")
 
         # [2] Ir para 50mm ACIMA do pick
         lines.append("\n  # [2] Ir para 50mm acima do pick\n")
-        lines.append(self._movel(pick_above_pose, blend=self.blend))
+        lines.append(f"  movel(pick_above, a=0.5, v=0.3, r={self.blend})\n")
 
         # [3] Descer 50mm linearmente ate o pick
         lines.append("\n  # [3] Descer 50mm linear Z -> posicao de pick\n")
-        lines.append(self._movel(pick_pose))
+        lines.append("  movel(pick_pose, a=0.5, v=0.3)\n")
 
         # [4] Fechar garra
         lines.append("\n  # [4] Fechar garra - pegar peca\n")
@@ -162,15 +150,15 @@ class UR3Controller:
 
         # [5] Subir 50mm linearmente (saida do pick)
         lines.append("\n  # [5] Subir 50mm linear Z - sair do pick\n")
-        lines.append(self._movel(pick_above_pose))
+        lines.append("  movel(pick_above, a=0.5, v=0.3)\n")
 
         # [6] Ir para 50mm ACIMA da celula destino
         lines.append(f"\n  # [6] Ir para 50mm acima da celula {cell}\n")
-        lines.append(self._movel(cell_above_pose, blend=self.blend))
+        lines.append(f"  movel(cell_above, a=0.5, v=0.3, r={self.blend})\n")
 
         # [7] Descer 50mm linearmente ate a posicao de pouso
         lines.append(f"\n  # [7] Descer 50mm linear Z -> celula {cell}\n")
-        lines.append(self._movel(cell_place_pose))
+        lines.append("  movel(cell_pose, a=0.5, v=0.3)\n")
 
         # [8] Abrir garra
         lines.append("\n  # [8] Abrir garra - soltar peca\n")
@@ -178,11 +166,11 @@ class UR3Controller:
 
         # [9] Subir 50mm linearmente (saida da celula)
         lines.append("\n  # [9] Subir 50mm linear Z - sair da celula\n")
-        lines.append(self._movel(cell_above_pose))
+        lines.append("  movel(cell_above, a=0.5, v=0.3)\n")
 
         # [10] HOME
         lines.append("\n  # [10] HOME\n")
-        lines.append(self._movej(home['joint_angles']))
+        lines.append(f"  movej([{home_str}], a=1.2, v=1.0)\n")
 
         lines.append("end\n")
         lines.append(f"place_piece_cell_{cell}()\n")
