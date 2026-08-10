@@ -218,8 +218,9 @@ class UR3Controller:
                 while time.time() - start < timeout:
                     try:
                         data = s.recv(1024)
-                        if data:
-                            log.debug(f"UR3: {data.decode(errors='ignore').strip()}")
+                        if not data:
+                            break
+                        log.debug(f"UR3: {data.decode(errors='ignore').strip()}")
                     except socket.timeout:
                         break
 
