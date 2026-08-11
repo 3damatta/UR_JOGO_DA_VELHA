@@ -28,11 +28,7 @@ import yaml
 import os
 import argparse
 
-try:
-    import onRobot.gripper as gripper
-    HAS_ONROBOT = True
-except ImportError:
-    HAS_ONROBOT = False
+import xmlrpc.client
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -57,7 +53,7 @@ APPROACH_OFFSET_M = 0.100
 class UR3Controller:
     """
     Gera e envia URScript para o UR3 via TCP socket.
-    Suporte a garra OnRobot RG2/RG6 via URCap (rg_grip).
+    Suporte a garra OnRobot RG2/RG6 via XML-RPC.
     """
 
     def __init__(self):
@@ -74,19 +70,21 @@ class UR3Controller:
 
         log.info(f"UR3 Controller pronto → {self.ip}:{self.port}")
 
-        # Inicializa a garra OnRobot
+        # Inicializa a garra OnRobot via XML-RPC
         self.rg_gripper = None
-        if HAS_ONROBOT:
-            log.info("Inicializando garra OnRobot RG2 via Python...")
-            try:
-                self.rg_gripper = gripper.RG(self.ip, 0)
-                log.info("✓ Garra OnRobot RG2 conectada com sucesso!")
-            except Exception as e:
-                log.error(f"Erro fatal: Nao foi possivel conectar a garra em {self.ip}: {e}")
-                log.error("Verifique a conexao fisica da garra e se o URCap esta ativo.")
-                raise e
-        else:
-            log.warning("Biblioteca 'onRobot' nao encontrada. O robo rodara sem controle da garra fisica (modo de simulacao).")
+        log.info(f"Conectando a garra OnRobot em http://{self.ip}:41414...")
+        try:
+            self.rg_gripper = xmlrpc.client.ServerProxy(f"http://{self.ip}:41414")
+            # Configura um timeout curto para evitar travar se o robô estiver offline
+            import socket
+            socket.setdefaulttimeout(3.0)
+            # Testa leitura da largura
+            self.rg_gripper.rg_get_width(0)
+            log.info("✓ Garra OnRobot conectada com sucesso via XML-RPC!")
+        except Exception as e:
+            log.warning(f"Nao foi possivel conectar a garra fisica em http://{self.ip}:41414 ({e})")
+            log.warning("O robo rodara com garra em modo de simulacao.")
+            self.rg_gripper = None
 
 
     # ── Helpers de URScript ───────────────────────────────────────────────────
@@ -109,7 +107,7 @@ class UR3Controller:
         return f"  movej([{jstr}], a={a}, v={v})\n"
 
     def _gripper_close(self):
-        """Fecha a garra na largura da peca usando a biblioteca Python."""
+        """Fecha a garra na largura da peca usando XML-RPC."""
         width = GRIPPER_CFG['close_width']
         force = GRIPPER_CFG['force']
         wait = GRIPPER_CFG['wait_time']
@@ -117,9 +115,10 @@ class UR3Controller:
         log.info(f"Garra: Fechando para {width}mm com {force}N...")
         if self.rg_gripper:
             try:
-                self.rg_gripper.rg_grip(width, float(force))
+                # O metodo rg_grip no servidor XML-RPC espera (rg_id, target_width, target_force)
+                self.rg_gripper.rg_grip(0, float(width), float(force))
             except Exception as e:
-                log.error(f"Erro ao acionar fechar garra: {e}")
+                log.error(f"Erro ao acionar fechar garra via XML-RPC: {e}")
                 raise e
             time.sleep(wait)
         else:
@@ -127,7 +126,7 @@ class UR3Controller:
             log.info("Garra: [SIMULADO] Garra fechada.")
 
     def _gripper_open(self):
-        """Abre a garra usando a biblioteca Python."""
+        """Abre a garra usando XML-RPC."""
         width = GRIPPER_CFG['open_width']
         force = GRIPPER_CFG['force']
         wait = GRIPPER_CFG['wait_time']
@@ -135,9 +134,10 @@ class UR3Controller:
         log.info(f"Garra: Abrindo para {width}mm...")
         if self.rg_gripper:
             try:
-                self.rg_gripper.rg_grip(width, float(force))
+                # O metodo rg_grip no servidor XML-RPC espera (rg_id, target_width, target_force)
+                self.rg_gripper.rg_grip(0, float(width), float(force))
             except Exception as e:
-                log.error(f"Erro ao acionar abrir garra: {e}")
+                log.error(f"Erro ao acionar abrir garra via XML-RPC: {e}")
                 raise e
             time.sleep(wait)
         else:
@@ -285,9 +285,9 @@ class UR3Controller:
             log.error(f"Celula invalida: {cell} (deve ser 0–8)")
             return False
 
-        if not HAS_ONROBOT:
-            log.error("[ERRO CRITICO] A biblioteca 'onRobot' nao esta instalada no Raspberry Pi!")
-            log.error("Por favor, instale usando: pip install -r requirements.txt")
+        if not self.rg_gripper:
+            log.error("[ERRO CRITICO] A garra fisica nao esta conectada via XML-RPC em http://%s:41414!" % self.ip)
+            log.error("Por favor, certifique-se de que o teste de garra (python scripts/test_gripper.py) funciona.")
             return False
 
         label = self.pos['board']['cells'][str(cell)]['label']
