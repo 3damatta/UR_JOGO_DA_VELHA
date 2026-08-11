@@ -22,6 +22,7 @@ import paho.mqtt.client as mqtt
 from typing import Optional
 import os
 import base64
+import threading
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -59,6 +60,13 @@ class PieceDetector:
         self.on_player_move = on_player_move
         self.latest_frame = None
         self.show_window = show_window
+
+        # Threading para captura e streaming assíncronos
+        self.raw_frame = None
+        self.latest_jpeg = None
+        self.running = False
+        self.frame_lock = threading.Lock()
+        self.jpeg_lock = threading.Lock()
 
         # HSV ranges
         self.player_lower = np.array(DET_CFG['player_hsv_lower'])
@@ -165,7 +173,17 @@ class PieceDetector:
         row = min(int(cy / cell_size), 2)
         return row * 3 + col
 
-    # ── Loop Principal ────────────────────────────────────────────────────────
+    # ── Loop Principal e Captura Assíncrona ───────────────────────────────────
+    def _capture_loop(self):
+        """Thread que captura frames brutos da câmera continuamente de forma assíncrona."""
+        while self.running:
+            if self.cap and self.cap.isOpened():
+                ret, frame = self.cap.read()
+                if ret:
+                    with self.frame_lock:
+                        self.raw_frame = frame
+            time.sleep(0.01)
+
     def run(self):
         self.cap = cv2.VideoCapture(CAM_CFG['index'])
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,  CAM_CFG['width'])
@@ -176,16 +194,22 @@ class PieceDetector:
             log.error("Não foi possível abrir a câmera")
             return
 
-        log.info("=== Detector iniciado. Pressione 'Q' para sair ===")
+        self.running = True
+        self.capture_thread = threading.Thread(target=self._capture_loop, daemon=True, name="Capture")
+        self.capture_thread.start()
+
+        log.info("=== Detector iniciado (Captura e Processamento Assincronos) ===")
         threshold = DET_CFG['stable_frames']
         publish_interval = 1.0   # segundos entre publicações de imagem
         last_img_publish = 0.0
 
-        while True:
-            ret, frame = self.cap.read()
-            if not ret:
-                log.warning("Frame vazio — aguardando câmera...")
-                time.sleep(0.1)
+        while self.running:
+            # Lê o frame bruto armazenado na memória de forma assíncrona
+            with self.frame_lock:
+                frame = self.raw_frame.copy() if self.raw_frame is not None else None
+
+            if frame is None:
+                time.sleep(0.01)
                 continue
 
             display = frame.copy()
@@ -230,22 +254,30 @@ class PieceDetector:
                 self._draw_board_overlay(display, frame, warped, player_dets)
                 self.latest_frame = display.copy()
 
+                # Pre-codifica a imagem em JPEG em background para evitar gargalo na API Flask
+                ret_jpeg, jpeg_buf = cv2.imencode('.jpg', display, [cv2.IMWRITE_JPEG_QUALITY, 60])
+                if ret_jpeg:
+                    with self.jpeg_lock:
+                        self.latest_jpeg = jpeg_buf.tobytes()
+
                 # ── Publica imagem anotada periodicamente
                 now = time.time()
                 if now - last_img_publish > publish_interval:
-                    _, buf = cv2.imencode('.jpg', display, [cv2.IMWRITE_JPEG_QUALITY, 60])
-                    b64 = base64.b64encode(buf).decode()
-                    self._publish(MQTT_CFG['topic_board_image'], {"image": b64})
-                    last_img_publish = now
+                    if ret_jpeg:
+                        b64 = base64.b64encode(jpeg_buf).decode()
+                        self._publish(MQTT_CFG['topic_board_image'], {"image": b64})
+                        last_img_publish = now
 
             if self.show_window:
                 if self.latest_frame is not None:
                     cv2.imshow("UR3 - Detecção de Peças", self.latest_frame)
                 if cv2.waitKey(1) & 0xFF == ord('q'):
+                    self.running = False
                     break
             else:
                 time.sleep(0.03)
 
+        self.running = False
         self.cap.release()
         cv2.destroyAllWindows()
         if self.mqtt_client:

@@ -199,27 +199,36 @@ def api_move():
     success = game_manager.player_move(cell)
     return jsonify({"success": success, "state": game_manager.get_state()})
 
+# Pré-codifica a imagem de fallback "Sem conexao de camera" uma única vez na inicialização
+_fallback_jpeg = None
+try:
+    import numpy as np
+    _fallback_img = np.zeros((240, 320, 3), dtype=np.uint8) + 50
+    cv2.putText(_fallback_img, "Sem conexao de camera", (20, 120),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 2)
+    _ret, _jpeg = cv2.imencode('.jpg', _fallback_img)
+    if _ret:
+        _fallback_jpeg = _jpeg.tobytes()
+except Exception as e:
+    log.error(f"Erro ao inicializar imagem de fallback: {e}")
+
 @app.route('/api/stream')
 def api_stream():
     def generate():
         while True:
             global detector
-            if detector and detector.latest_frame is not None:
-                ret, jpeg = cv2.imencode('.jpg', detector.latest_frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
-                if ret:
-                    frame = jpeg.tobytes()
-                    yield (b'--frame\r\n'
-                           b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            frame = None
+            if detector:
+                with detector.jpeg_lock:
+                    frame = detector.latest_jpeg
+
+            if frame is not None:
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
             else:
-                # Retorna imagem cinza avisando "Sem Câmera"
-                img = 50 * os.urandom(320 * 240 * 3) # imagem cinza
-                img = img.reshape((240, 320, 3))
-                cv2.putText(img, "Sem conexao de camera", (20, 120),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 2)
-                ret, jpeg = cv2.imencode('.jpg', img)
-                if ret:
+                if _fallback_jpeg is not None:
                     yield (b'--frame\r\n'
-                           b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
+                           b'Content-Type: image/jpeg\r\n\r\n' + _fallback_jpeg + b'\r\n')
             time.sleep(0.06)  # ~15 FPS
     return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
