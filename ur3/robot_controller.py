@@ -72,9 +72,9 @@ class UR3Controller:
 
         # Inicializa a garra OnRobot via XML-RPC
         self.rg_gripper = None
-        log.info(f"Conectando a garra OnRobot em http://{self.ip}:41414...")
+        log.info(f"Conectando a garra OnRobot em http://{self.ip}:41414/...")
         try:
-            self.rg_gripper = xmlrpc.client.ServerProxy(f"http://{self.ip}:41414")
+            self.rg_gripper = xmlrpc.client.ServerProxy(f"http://{self.ip}:41414/")
             # Configura um timeout curto para evitar travar se o robô estiver offline
             import socket
             socket.setdefaulttimeout(3.0)
@@ -82,7 +82,7 @@ class UR3Controller:
             self.rg_gripper.rg_get_width(0)
             log.info("✓ Garra OnRobot conectada com sucesso via XML-RPC!")
         except Exception as e:
-            log.warning(f"Nao foi possivel conectar a garra fisica em http://{self.ip}:41414 ({e})")
+            log.warning(f"Nao foi possivel conectar a garra fisica em http://{self.ip}:41414/ ({e})")
             log.warning("O robo rodara com garra em modo de simulacao.")
             self.rg_gripper = None
 

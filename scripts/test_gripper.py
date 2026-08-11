@@ -13,8 +13,8 @@ port = 41414
 print(f"Conectando ao servidor XML-RPC da OnRobot em {robot_ip}:{port}...")
 
 try:
-    # Cria o proxy XML-RPC diretamente para o IP do robô
-    proxy = xmlrpc.client.ServerProxy(f"http://{robot_ip}:{port}")
+    # Cria o proxy XML-RPC diretamente para o IP do robô (com barra no final para usar a raiz)
+    proxy = xmlrpc.client.ServerProxy(f"http://{robot_ip}:{port}/")
     
     # Testa a leitura da largura atual
     print("Tentando ler largura atual da garra...")
