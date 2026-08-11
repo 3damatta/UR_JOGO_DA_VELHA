@@ -28,12 +28,6 @@ import yaml
 import os
 import argparse
 
-try:
-    import onRobot.gripper as gripper
-    HAS_ONROBOT = True
-except ImportError:
-    HAS_ONROBOT = False
-
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
@@ -50,8 +44,8 @@ with open(os.path.join(BASE_DIR, 'config', 'settings.yaml'), encoding='utf-8') a
 ROBOT_CFG   = cfg['robot']
 GRIPPER_CFG = cfg['gripper']
 
-# Offset de abordagem: 50 mm acima da posição de pouso
-APPROACH_OFFSET_M = 0.050
+# Offset de abordagem: 100 mm acima da posição de pouso
+APPROACH_OFFSET_M = 0.100
 
 
 class UR3Controller:
@@ -74,17 +68,6 @@ class UR3Controller:
 
         log.info(f"UR3 Controller pronto → {self.ip}:{self.port}")
 
-        # Inicializa a garra OnRobot se a biblioteca estiver disponível
-        self.rg_gripper = None
-        if HAS_ONROBOT:
-            try:
-                # O ID da garra é configurado como 0 (padrão do canal da ferramenta)
-                self.rg_gripper = gripper.RG(self.ip, 0)
-                log.info("✓ Garra OnRobot RG2 inicializada via biblioteca Python!")
-            except Exception as e:
-                log.warning(f"Não foi possível inicializar a garra OnRobot via Python ({e}). Rodando sem garra física.")
-        else:
-            log.warning("Biblioteca 'onRobot' não encontrada. Rodando sem garra física (modo simulação).")
 
     # ── Helpers de URScript ───────────────────────────────────────────────────
     def _pose(self, x: float, y: float, z: float, orient: list) -> str:
@@ -105,125 +88,96 @@ class UR3Controller:
         jstr = ", ".join(f"{j:.4f}" for j in joints)
         return f"  movej([{jstr}], a={a}, v={v})\n"
 
-    def _gripper_close(self):
-        """Fecha a garra na largura da peca usando a biblioteca Python."""
+    def _gripper_close(self) -> str:
+        """Fecha a garra OnRobot (agarra a peca) via URScript."""
+        force = GRIPPER_CFG['force']
         width = GRIPPER_CFG['close_width']
-        force = GRIPPER_CFG['force']
-        wait = GRIPPER_CFG['wait_time']
-        
-        log.info(f"Garra: Fechando para {width}mm com {force}N...")
-        if self.rg_gripper:
-            try:
-                self.rg_gripper.rg_grip(width, float(force))
-            except Exception as e:
-                log.error(f"Erro ao acionar fechar garra: {e}")
-            time.sleep(wait)
-        else:
-            time.sleep(wait)
-            log.info("Garra: [SIMULADO] Garra fechada.")
+        wait  = GRIPPER_CFG['wait_time']
+        return (
+            f"  rg_grip({width}, {force}, 0)\n"
+            f"  sleep({wait})\n"
+        )
 
-    def _gripper_open(self):
-        """Abre a garra usando a biblioteca Python."""
+    def _gripper_open(self) -> str:
+        """Abre a garra OnRobot (solta a peca) via URScript."""
+        force = GRIPPER_CFG['force']
         width = GRIPPER_CFG['open_width']
-        force = GRIPPER_CFG['force']
-        wait = GRIPPER_CFG['wait_time']
-        
-        log.info(f"Garra: Abrindo para {width}mm...")
-        if self.rg_gripper:
-            try:
-                self.rg_gripper.rg_grip(width, float(force))
-            except Exception as e:
-                log.error(f"Erro ao acionar abrir garra: {e}")
-            time.sleep(wait)
-        else:
-            time.sleep(wait)
-            log.info("Garra: [SIMULADO] Garra aberta.")
-
-    # ── Geração do URScript Principal ─────────────────────────────────────────
-    def build_pick_movement(self) -> str:
-        """
-        [Movimento Fase 1]
-        HOME -> 50mm acima do pick -> desce ate o pick
-        """
-        home = self.pos['home_pose']['joint_angles']
-        pick = self.pos['pick']['joint_angles']
-        
-        home_str = ", ".join(f"{j:.5f}" for j in home)
-        pick_str = ", ".join(f"{j:.5f}" for j in pick)
-        
-        lines = [
-            "def pick_movement():\n",
-            f"  home_joints = [{home_str}]\n",
-            f"  pick_joints = [{pick_str}]\n",
-            "  pick_pose = get_forward_kin(pick_joints)\n",
-            "  pick_above = p[pick_pose[0], pick_pose[1], pick_pose[2] + 0.050, pick_pose[3], pick_pose[4], pick_pose[5]]\n",
-            "  movej(home_joints, a=1.2, v=1.0)\n",
-            f"  movel(pick_above, a=0.5, v=0.3, r={self.blend})\n",
-            "  movel(pick_pose, a=0.5, v=0.3)\n",
-            "end\n",
-            "pick_movement()\n"
-        ]
-        return "".join(lines)
-
-    def build_place_movement(self, cell: int) -> str:
-        """
-        [Movimento Fase 2]
-        Sobe do pick -> vai acima da celula -> desce na celula
-        """
-        pick = self.pos['pick']['joint_angles']
-        cell_joints = self.pos['board']['cells'][str(cell)]['joint_angles']
-        
-        pick_str = ", ".join(f"{j:.5f}" for j in pick)
-        cell_str = ", ".join(f"{j:.5f}" for j in cell_joints)
-        
-        lines = [
-            "def place_movement():\n",
-            f"  pick_joints = [{pick_str}]\n",
-            f"  cell_joints = [{cell_str}]\n",
-            "  pick_pose = get_forward_kin(pick_joints)\n",
-            "  cell_pose = get_forward_kin(cell_joints)\n",
-            "  pick_above = p[pick_pose[0], pick_pose[1], pick_pose[2] + 0.050, pick_pose[3], pick_pose[4], pick_pose[5]]\n",
-            "  cell_above = p[cell_pose[0], cell_pose[1], cell_pose[2] + 0.050, cell_pose[3], cell_pose[4], cell_pose[5]]\n",
-            "  movel(pick_above, a=0.5, v=0.3)\n",
-            f"  movel(cell_above, a=0.5, v=0.3, r={self.blend})\n",
-            "  movel(cell_pose, a=0.5, v=0.3)\n",
-            "end\n",
-            "place_movement()\n"
-        ]
-        return "".join(lines)
-
-    def build_after_place_movement(self, cell: int) -> str:
-        """
-        [Movimento Fase 3]
-        Sobe da celula -> HOME
-        """
-        home = self.pos['home_pose']['joint_angles']
-        cell_joints = self.pos['board']['cells'][str(cell)]['joint_angles']
-        
-        home_str = ", ".join(f"{j:.5f}" for j in home)
-        cell_str = ", ".join(f"{j:.5f}" for j in cell_joints)
-        
-        lines = [
-            "def after_place():\n",
-            f"  home_joints = [{home_str}]\n",
-            f"  cell_joints = [{cell_str}]\n",
-            "  cell_pose = get_forward_kin(cell_joints)\n",
-            "  cell_above = p[cell_pose[0], cell_pose[1], cell_pose[2] + 0.050, cell_pose[3], cell_pose[4], cell_pose[5]]\n",
-            "  movel(cell_above, a=0.5, v=0.3)\n",
-            "  movej(home_joints, a=1.2, v=1.0)\n",
-            "end\n",
-            "after_place()\n"
-        ]
-        return "".join(lines)
+        wait  = GRIPPER_CFG['wait_time']
+        return (
+            f"  rg_grip({width}, {force}, 0)\n"
+            f"  sleep({wait})\n"
+        )
 
     # ── Geração do URScript Principal ─────────────────────────────────────────
     def build_place_script(self, cell: int) -> str:
-        """Gera o URScript concatenado apenas para visualizacao e testes em dry-run."""
-        return (
-            "# === FASE 1: MOVER ATE O PICK ===\n" + self.build_pick_movement() + "\n" +
-            "# === FASE 2: MOVER ATE A CELULA ===\n" + self.build_place_movement(cell) + "\n" +
-            "# === FASE 3: RETORNAR HOME ===\n" + self.build_after_place_movement(cell)
-        )
+        """
+        Gera o URScript completo usando angulos de junta e calculando
+        cinematica direta (forward kinematics) no robo para os movimentos lineares.
+        Aproximacao vertical de 100mm (0.100m).
+        """
+        home        = self.pos['home_pose']['joint_angles']
+        pick        = self.pos['pick']['joint_angles']
+        cell_joints = self.pos['board']['cells'][str(cell)]['joint_angles']
+
+        # Converte as listas de juntas para strings do URScript
+        home_str = ", ".join(f"{j:.5f}" for j in home)
+        pick_str = ", ".join(f"{j:.5f}" for j in pick)
+        cell_str = ", ".join(f"{j:.5f}" for j in cell_joints)
+
+        lines = [f"def place_piece_cell_{cell}():\n"]
+
+        # Calcular poses cartesianas na Base via get_forward_kin
+        lines.append(f"  pick_joints = [{pick_str}]\n")
+        lines.append(f"  cell_joints = [{cell_str}]\n")
+        lines.append("  pick_pose = get_forward_kin(pick_joints)\n")
+        lines.append("  cell_pose = get_forward_kin(cell_joints)\n")
+        lines.append(f"  pick_above = p[pick_pose[0], pick_pose[1], pick_pose[2] + {APPROACH_OFFSET_M:.3f}, pick_pose[3], pick_pose[4], pick_pose[5]]\n")
+        lines.append(f"  cell_above = p[cell_pose[0], cell_pose[1], cell_pose[2] + {APPROACH_OFFSET_M:.3f}, cell_pose[3], cell_pose[4], cell_pose[5]]\n")
+
+        # [1] HOME
+        lines.append("\n  # [1] HOME\n")
+        lines.append(f"  movej([{home_str}], a=1.2, v=1.0)\n")
+
+        # [2] Ir para 100mm ACIMA do pick
+        lines.append(f"\n  # [2] Ir para {int(APPROACH_OFFSET_M*1000)}mm acima do pick\n")
+        lines.append(f"  movel(pick_above, a=0.5, v=0.3, r={self.blend})\n")
+
+        # [3] Descer linearmente ate o pick
+        lines.append(f"\n  # [3] Descer {int(APPROACH_OFFSET_M*1000)}mm linear Z -> posicao de pick\n")
+        lines.append("  movel(pick_pose, a=0.5, v=0.3)\n")
+
+        # [4] Fechar garra
+        lines.append("\n  # [4] Fechar garra - pegar peca\n")
+        lines.append(self._gripper_close())
+
+        # [5] Subir linearmente (saida do pick)
+        lines.append(f"\n  # [5] Subir {int(APPROACH_OFFSET_M*1000)}mm linear Z - sair do pick\n")
+        lines.append("  movel(pick_above, a=0.5, v=0.3)\n")
+
+        # [6] Ir para 100mm ACIMA da celula destino
+        lines.append(f"\n  # [6] Ir para {int(APPROACH_OFFSET_M*1000)}mm acima da celula {cell}\n")
+        lines.append(f"  movel(cell_above, a=0.5, v=0.3, r={self.blend})\n")
+
+        # [7] Descer linearmente ate a posicao de pouso
+        lines.append(f"\n  # [7] Descer {int(APPROACH_OFFSET_M*1000)}mm linear Z -> celula {cell}\n")
+        lines.append("  movel(cell_pose, a=0.5, v=0.3)\n")
+
+        # [8] Abrir garra
+        lines.append("\n  # [8] Abrir garra - soltar peca\n")
+        lines.append(self._gripper_open())
+
+        # [9] Subir linearmente (saida da celula)
+        lines.append(f"\n  # [9] Subir {int(APPROACH_OFFSET_M*1000)}mm linear Z - sair da celula\n")
+        lines.append("  movel(cell_above, a=0.5, v=0.3)\n")
+
+        # [10] HOME
+        lines.append("\n  # [10] HOME\n")
+        lines.append(f"  movej([{home_str}], a=1.2, v=1.0)\n")
+
+        lines.append("end\n")
+        lines.append(f"place_piece_cell_{cell}()\n")
+
+        return "".join(lines)
 
     # ── Comunicação TCP ───────────────────────────────────────────────────────
     def send_script(self, script: str, timeout: float = 60.0) -> bool:
@@ -272,45 +226,23 @@ class UR3Controller:
     # ── Interface Pública ─────────────────────────────────────────────────────
     def place_piece(self, cell: int) -> bool:
         """
-        Executa a sequencia completa de pick & place na celula informada em 3 fases:
-        Fase 1: Mover para o pick.
-        Fase 2: Fechar garra (Python) e mover para a celula.
-        Fase 3: Abrir garra (Python) e retornar para a HOME.
+        Executa a sequência completa de pick & place na célula informada.
+        Retorna True se o script foi enviado com sucesso.
         """
         if cell < 0 or cell > 8:
-            log.error(f"Celula invalida: {cell} (deve ser 0–8)")
+            log.error(f"Célula inválida: {cell} (deve ser 0–8)")
             return False
 
         label = self.pos['board']['cells'][str(cell)]['label']
-        log.info(f"► Robo jogando na celula {cell} ({label})")
+        log.info(f"► Robô jogando na célula {cell} ({label})")
 
-        # ── [FASE 1] Mover ate o Pick
-        log.info("[FASE 1/3] Movendo para a posicao de captura (PICK)...")
-        script_pick = self.build_pick_movement()
-        if not self.send_script(script_pick, timeout=30.0):
-            log.error("Falha na Fase 1 (Movimento ate o Pick)")
-            return False
+        script = self.build_place_script(cell)
+        log.debug(f"URScript:\n{script}")
 
-        # ── [FASE 2] Fechar Garra e Mover ate a Celula
-        self._gripper_close()
-        
-        log.info(f"[FASE 2/3] Elevando e movendo ate a celula {cell} ({label})...")
-        script_place = self.build_place_movement(cell)
-        if not self.send_script(script_place, timeout=30.0):
-            log.error("Falha na Fase 2 (Movimento ate a Celula)")
-            return False
-            
-        # ── [FASE 3] Abrir Garra e Retornar para HOME
-        self._gripper_open()
-        
-        log.info("[FASE 3/3] Afastando e retornando para HOME...")
-        script_after = self.build_after_place_movement(cell)
-        if not self.send_script(script_after, timeout=30.0):
-            log.error("Falha na Fase 3 (Retorno para HOME)")
-            return False
-
-        log.info(f"✓ Peca posicionada na celula {cell} com sucesso!")
-        return True
+        success = self.send_script(script)
+        if success:
+            log.info(f"✓ Peça posicionada na célula {cell}")
+        return success
 
     def go_home(self) -> bool:
         """Envia o robô diretamente à pose home."""
