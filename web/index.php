@@ -3,17 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>UR3 Jogo da Velha 🤖</title>
+  <title>SENAI Indústria 4.0 — UR3 Jogo da Velha 🤖</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
   <header>
     <div class="logo-container">
-      <div class="logo-icon">🤖</div>
-      <div>
-        <h1>UR3 Tic-Tac-Toe</h1>
-        <p style="font-size: 0.75rem; color: var(--color-text-muted);">Controle unificado sem Node-RED</p>
+      <div class="senai-logo-badge">
+        <svg width="105" height="30" viewBox="0 0 105 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- SENAI Vector Text -->
+          <path d="M 19 6 H 6 V 14 H 19 V 23 H 6" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="square" stroke-linejoin="miter"/>
+          <path d="M 26 6 H 37 M 26 14.5 H 35 M 26 23 H 37 M 26 6 V 23" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="square"/>
+          <path d="M 44 23 V 6 L 57 23 V 6" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="square" stroke-linejoin="miter"/>
+          <path d="M 64 23 L 71 6 L 78 23 M 66.5 17 H 75.5" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="square" stroke-linejoin="miter"/>
+          <path d="M 85 6 V 23" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="square"/>
+          <rect x="5" y="27" width="82" height="3" fill="#E30613" rx="1"/>
+        </svg>
+        <span class="i40-badge">INDÚSTRIA 4.0</span>
+      </div>
+      <div class="header-titles">
+        <h1>SENAI — Célula de Robótica Colaborativa</h1>
+        <p class="header-subtitle">Centro de Treinamento e Desenvolvimento da Indústria 4.0 • UR3 Jogo da Velha</p>
       </div>
     </div>
     <div class="status-badge">
@@ -62,7 +73,7 @@
           <select id="difficultySelect" onchange="changeDifficulty(this.value)">
             <option value="easy">Fácil 🟢 (Vitória Humana Provável)</option>
             <option value="medium" selected>Médio 🟡 (Jogo Justo & Equilibrado)</option>
-            <option value="impossible">Impossível 🔴 (Minimax 100%)</option>
+            <option value="impossible">MODO HERÓI ⚡ (Desafio Impossível)</option>
           </select>
         </div>
 
@@ -80,7 +91,7 @@
   </main>
 
   <footer>
-    UR3 Universal Robots × OnRobot RG2 Gripper. Desenvolvido com Python (Flask + OpenCV) & PHP.
+    SENAI — Centro de Treinamento e Desenvolvimento da Indústria 4.0 • UR3 Universal Robots × OnRobot RG2 Gripper
   </footer>
 
   <script>
@@ -214,7 +225,7 @@
         isPolling = true;
 
         if (data.status === 'success') {
-          const names = { 'easy': 'Fácil', 'medium': 'Médio', 'impossible': 'Impossível' };
+          const names = { 'easy': 'Fácil 🟢', 'medium': 'Médio 🟡', 'impossible': 'MODO HERÓI ⚡', 'hard': 'MODO HERÓI ⚡' };
           logEvent(`✓ Dificuldade alterada para: ${names[newDifficulty] || newDifficulty}`, 'info');
           updateUI(data.state);
         } else {

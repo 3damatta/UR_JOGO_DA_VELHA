@@ -5,23 +5,27 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@300;400;600;700&display=swap');
 
 :root {
-  --bg-primary: #0a0c10;
-  --bg-secondary: #121620;
-  --bg-panel: rgba(18, 22, 32, 0.7);
+  --bg-primary: #070a10;
+  --bg-secondary: #0f172a;
+  --bg-panel: rgba(15, 23, 42, 0.75);
   --border-color: rgba(255, 255, 255, 0.08);
   
-  --color-text-main: #f3f4f6;
-  --color-text-muted: #9ca3af;
+  --color-senai-blue: #004b93;
+  --color-senai-light-blue: #0066c4;
+  --color-senai-red: #e30613;
   
-  /* Neons */
-  --color-player: #00f0ff;
-  --color-player-glow: rgba(0, 240, 255, 0.4);
-  --color-robot: #ff7b00;
-  --color-robot-glow: rgba(255, 123, 0, 0.4);
+  --color-text-main: #f8fafc;
+  --color-text-muted: #94a3b8;
   
-  --color-accent: #8b5cf6;
-  --color-accent-hover: #7c3aed;
-  --color-accent-glow: rgba(139, 92, 246, 0.3);
+  /* Neons Indústria 4.0 */
+  --color-player: #00d4ff;
+  --color-player-glow: rgba(0, 212, 255, 0.4);
+  --color-robot: #ff6b00;
+  --color-robot-glow: rgba(255, 107, 0, 0.4);
+  
+  --color-accent: #004b93;
+  --color-accent-hover: #0066c4;
+  --color-accent-glow: rgba(0, 102, 196, 0.4);
   
   --color-success: #10b981;
   --color-danger: #ef4444;
@@ -43,14 +47,14 @@ body {
   flex-direction: column;
   overflow-x: hidden;
   background-image: 
-    radial-gradient(circle at 10% 20%, rgba(139, 92, 246, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 90% 80%, rgba(0, 240, 255, 0.05) 0%, transparent 40%);
+    radial-gradient(circle at 10% 20%, rgba(0, 75, 147, 0.12) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(0, 212, 255, 0.08) 0%, transparent 40%);
 }
 
 header {
-  padding: 1.5rem 2rem;
+  padding: 1.25rem 2rem;
   border-bottom: 1px solid var(--border-color);
-  background-color: rgba(10, 12, 16, 0.8);
+  background-color: rgba(7, 10, 16, 0.85);
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
@@ -63,31 +67,50 @@ header {
 .logo-container {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1.25rem;
 }
 
-.logo-icon {
-  background: linear-gradient(135deg, var(--color-player), var(--color-accent));
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+.senai-logo-badge {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: 0.25rem;
+  background-color: rgba(0, 75, 147, 0.25);
+  padding: 0.5rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 102, 196, 0.4);
+  box-shadow: 0 0 15px rgba(0, 75, 147, 0.3);
+}
+
+.i40-badge {
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.65rem;
   font-weight: 800;
-  color: #000;
-  font-size: 1.25rem;
-  box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+  letter-spacing: 1.5px;
+  color: var(--color-player);
+  text-shadow: 0 0 6px var(--color-player-glow);
+}
+
+.header-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
 }
 
 h1 {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 800;
   letter-spacing: -0.5px;
-  background: linear-gradient(to right, #ffffff, #9ca3af);
+  background: linear-gradient(to right, #ffffff, #cbd5e1);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+.header-subtitle {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
 }
 
 .status-badge {
