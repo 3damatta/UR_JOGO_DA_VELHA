@@ -70,4 +70,5 @@ game:
   player_symbol: "X"       # Símbolo do jogador humano
   robot_symbol: "O"         # Símbolo do robô
   robot_starts: false       # True = robô começa, False = jogador começa
+  difficulty: "medium"      # easy | medium | hard / impossible (default: medium para um jogo justo)
 

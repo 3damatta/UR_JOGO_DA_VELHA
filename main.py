@@ -52,8 +52,9 @@ class GameManager:
         self.last_robot_move = -1
         self.winning_line = []
         self.robot = robot_controller
+        self.difficulty = cfg.get('game', {}).get('difficulty', 'medium')
         self.lock = threading.Lock()
-        log.info("GameManager inicializado.")
+        log.info(f"GameManager inicializado. Dificuldade: {self.difficulty}")
 
     def get_state(self):
         with self.lock:
@@ -63,8 +64,17 @@ class GameManager:
                 "status": self.status,
                 "last_player_move": self.last_player_move,
                 "last_robot_move": self.last_robot_move,
-                "winning_line": self.winning_line
+                "winning_line": self.winning_line,
+                "difficulty": self.difficulty
             }
+
+    def set_difficulty(self, difficulty: str):
+        with self.lock:
+            if difficulty in ['easy', 'medium', 'hard', 'impossible']:
+                self.difficulty = difficulty
+                log.info(f"Dificuldade alterada para: {difficulty}")
+                return True
+            return False
 
     def reset(self):
         with self.lock:
@@ -127,9 +137,9 @@ class GameManager:
         try:
             from game.minimax import best_move
             
-            # 1. Calcula a melhor jogada via Minimax
+            # 1. Calcula a jogada via Minimax (respeitando a dificuldade configurada)
             with self.lock:
-                robot_cell = best_move(self.board)
+                robot_cell = best_move(self.board, difficulty=self.difficulty)
 
             if robot_cell == -1:
                 with self.lock:
@@ -138,7 +148,7 @@ class GameManager:
                 log.info("Fim de Jogo: Deu Velha (Empate)")
                 return
 
-            log.info(f"► Robô escolheu a célula {robot_cell}. Iniciando movimento físico...")
+            log.info(f"► Robô escolheu a célula {robot_cell} (Modo: {self.difficulty}). Iniciando movimento físico...")
 
             # 2. Executa movimento físico do robô (bloqueante para o robô, assíncrono para a API)
             if self.robot:
@@ -186,7 +196,23 @@ def api_state():
 
 @app.route('/api/reset', methods=['POST'])
 def api_reset():
+    data = request.get_json() or {}
+    difficulty = data.get('difficulty')
+    if difficulty:
+        game_manager.set_difficulty(difficulty)
     game_manager.reset()
+    return jsonify({"status": "success", "state": game_manager.get_state()})
+
+@app.route('/api/difficulty', methods=['POST'])
+def api_difficulty():
+    data = request.get_json() or {}
+    difficulty = data.get('difficulty') or request.args.get('difficulty')
+    if not difficulty:
+        return jsonify({"error": "Parâmetro 'difficulty' ausente"}), 400
+    
+    success = game_manager.set_difficulty(difficulty)
+    if not success:
+        return jsonify({"error": f"Dificuldade inválida: '{difficulty}'. Use 'easy', 'medium', 'hard' ou 'impossible'."}), 400
     return jsonify({"status": "success", "state": game_manager.get_state()})
 
 @app.route('/api/move', methods=['POST'])

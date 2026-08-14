@@ -284,6 +284,42 @@ main {
   font-weight: 700;
 }
 
+/* Seletor de Dificuldade */
+.difficulty-selector {
+  background-color: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-color);
+  padding: 0.85rem 1.25rem;
+  border-radius: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.difficulty-selector label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+.difficulty-selector select {
+  background-color: #0d1117;
+  color: var(--color-text-main);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.5rem 0.85rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.difficulty-selector select:hover {
+  border-color: var(--color-accent);
+}
+
 .btn {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 700;

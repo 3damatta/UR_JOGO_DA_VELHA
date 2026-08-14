@@ -57,6 +57,15 @@
           <span class="state-value" id="gameStateLabel">Carregando...</span>
         </div>
 
+        <div class="difficulty-selector">
+          <label for="difficultySelect">Dificuldade do Robô:</label>
+          <select id="difficultySelect" onchange="changeDifficulty(this.value)">
+            <option value="easy">Fácil 🟢 (Vitória Humana Provável)</option>
+            <option value="medium" selected>Médio 🟡 (Jogo Justo & Equilibrado)</option>
+            <option value="impossible">Impossível 🔴 (Minimax 100%)</option>
+          </select>
+        </div>
+
         <button class="btn btn-primary" onclick="resetGame()">
           <svg style="width:20px;height:20px" viewBox="0 0 24 24"><path fill="currentColor" d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z" /></svg>
           Iniciar / Reiniciar Jogo
@@ -174,6 +183,14 @@
         stateLabel.innerText = 'Jogo Pronto. Pressione "Iniciar / Reiniciar".';
         stateLabel.style.color = '#fff';
       }
+
+      // Sincroniza o seletor de dificuldade com o estado do backend
+      if (state.difficulty) {
+        const diffSelect = document.getElementById('difficultySelect');
+        if (diffSelect && diffSelect.value !== state.difficulty) {
+          diffSelect.value = state.difficulty;
+        }
+      }
     }
 
     function updateOfflineUI() {
@@ -185,6 +202,28 @@
       const stateLabel = document.getElementById('gameStateLabel');
       stateLabel.innerText = 'Conexão perdida com o servidor Python.';
       stateLabel.style.color = 'var(--color-danger)';
+    }
+
+    // Altera a dificuldade da IA
+    async function changeDifficulty(newDifficulty) {
+      logEvent(`Alterando dificuldade para '${newDifficulty}'...`);
+      try {
+        isPolling = false;
+        const res = await fetch(`api.php?action=difficulty&difficulty=${newDifficulty}`);
+        const data = await res.json();
+        isPolling = true;
+
+        if (data.status === 'success') {
+          const names = { 'easy': 'Fácil', 'medium': 'Médio', 'impossible': 'Impossível' };
+          logEvent(`✓ Dificuldade alterada para: ${names[newDifficulty] || newDifficulty}`, 'info');
+          updateUI(data.state);
+        } else {
+          logEvent('Erro ao alterar dificuldade.', 'error');
+        }
+      } catch (err) {
+        logEvent('Erro de conexão ao alterar dificuldade.', 'error');
+        isPolling = true;
+      }
     }
 
     // Executa Jogada Manual ao Clicar na Célula

@@ -65,6 +65,24 @@ if ($action === 'state') {
     } else {
         echo $response;
     }
+} elseif ($action === 'difficulty') {
+    $difficulty = $_GET['difficulty'] ?? 'medium';
+    $data = json_encode(["difficulty" => $difficulty]);
+    $opts = [
+        "http" => [
+            "method" => "POST",
+            "header" => "Content-Type: application/json\r\nContent-Length: " . strlen($data) . "\r\n",
+            "content" => $data
+        ]
+    ];
+    $context = stream_context_create($opts);
+    $response = @file_get_contents("$python_api_url/difficulty", false, $context);
+    if ($response === false) {
+        http_response_code(502);
+        echo json_encode(["error" => "Não foi possível alterar a dificuldade no backend."]);
+    } else {
+        echo $response;
+    }
 } else {
     http_response_code(400);
     echo json_encode(["error" => "Ação inválida."]);

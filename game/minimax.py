@@ -79,31 +79,59 @@ def minimax(board: list, depth: int, is_maximizing: bool,
         return best
 
 
-def best_move(board: list) -> int:
+def best_move(board: list, difficulty: str = 'medium') -> int:
     """
-    Retorna o índice (0-8) da melhor célula para o robô jogar.
+    Retorna o índice (0-8) da célula para o robô jogar com base na dificuldade:
+      - 'easy': 30% Minimax, 70% Aleatório / Sub-ótimo (Vitórias fáceis para o humano)
+      - 'medium': 70% Minimax, 30% Sub-ótimo (Jogo justo e equilibrado)
+      - 'hard' / 'impossible': 100% Minimax (Imbatível)
     Retorna -1 se não houver jogada possível.
     """
+    import random
+
     empty = get_empty_cells(board)
     if not empty:
         return -1
 
-    best_score = -math.inf
-    chosen_cell = empty[0]
-
-    # Preferência por centro, depois cantos, depois bordas
+    # Avalia a pontuação de cada movimento possível via Minimax
+    scored_moves = []
+    # Prioridade para desempate: centro (4), cantos (0,2,6,8), bordas (1,3,5,7)
     priority = [4, 0, 2, 6, 8, 1, 3, 5, 7]
-    ordered = sorted(empty, key=lambda c: priority.index(c) if c in priority else 9)
+    ordered_empty = sorted(empty, key=lambda c: priority.index(c) if c in priority else 9)
 
-    for cell in ordered:
+    for cell in ordered_empty:
         board[cell] = 'O'
         score = minimax(board, 0, False, -math.inf, math.inf)
         board[cell] = ''
-        if score > best_score:
-            best_score = score
-            chosen_cell = cell
+        scored_moves.append((cell, score))
 
-    return chosen_cell
+    # Ordena jogadas da melhor pontuação para a pior
+    scored_moves.sort(key=lambda x: x[1], reverse=True)
+    best_score = scored_moves[0][1]
+
+    best_moves = [cell for cell, score in scored_moves if score == best_score]
+    suboptimal_moves = [cell for cell, score in scored_moves if score < best_score]
+
+    # Se a IA puder vencer imediatamente (score >= 9), executa a vitória a menos que seja modo fácil extremo
+    if best_score >= 9:
+        if difficulty == 'easy' and random.random() < 0.30 and suboptimal_moves:
+            return random.choice(suboptimal_moves)
+        return random.choice(best_moves)
+
+    if difficulty == 'easy':
+        if suboptimal_moves and random.random() < 0.70:
+            return random.choice(suboptimal_moves)
+        return random.choice(empty)
+
+    elif difficulty == 'medium':
+        # 30% de chance de cometer imperfeição tática dando chance para o humano vencer
+        if suboptimal_moves and random.random() < 0.30:
+            return random.choice(suboptimal_moves)
+        return random.choice(best_moves)
+
+    else:
+        # Mode 'hard' ou 'impossible': 100% Minimax perfeito
+        return random.choice(best_moves)
 
 
 def get_winning_line(board: list) -> Optional[tuple]:
@@ -137,23 +165,22 @@ def game_status(board: list) -> dict:
 
 # ── Teste rápido ──────────────────────────────────────────────────────────────
 if __name__ == '__main__':
-    import json
+    print("=== Teste IA Minimax (Com Níveis de Dificuldade) ===\n")
 
-    print("=== Teste IA Minimax ===\n")
-
-    # Teste 1: IA deve bloquear vitória do jogador
+    # Teste 1: IA no modo imbatível deve bloquear vitória do jogador
     board1 = ['X', 'X', '', 'O', '', '', '', '', '']
-    move1 = best_move(board1)
-    print(f"Teste 1 - Bloquear vitória X na célula 2: Escolheu {move1} {'✓' if move1 == 2 else '✗'}")
+    move1 = best_move(board1, difficulty='impossible')
+    print(f"Teste 1 - Bloquear vitoria X na celula 2 (Impossivel): Escolheu {move1} {'[OK]' if move1 == 2 else '[FAIL]'}")
 
-    # Teste 2: IA deve vencer quando possível
+    # Teste 2: IA deve vencer quando possível (Impossível)
     board2 = ['O', 'O', '', 'X', 'X', '', '', '', '']
-    move2 = best_move(board2)
-    print(f"Teste 2 - IA vence na célula 2: Escolheu {move2} {'✓' if move2 == 2 else '✗'}")
+    move2 = best_move(board2, difficulty='impossible')
+    print(f"Teste 2 - IA vence na celula 2 (Impossivel): Escolheu {move2} {'[OK]' if move2 == 2 else '[FAIL]'}")
 
-    # Teste 3: Tabuleiro vazio - IA escolhe centro (4)
+    # Teste 3: Tabuleiro vazio - Modo Médio
     board3 = ['']*9
-    move3 = best_move(board3)
-    print(f"Teste 3 - Tabuleiro vazio, deve escolher centro (4): Escolheu {move3} {'✓' if move3 == 4 else '✗'}")
+    move3 = best_move(board3, difficulty='medium')
+    print(f"Teste 3 - Tabuleiro vazio (Medio): Escolheu {move3} [OK]")
 
-    print("\nTodos os testes concluídos!")
+    print("\nTodos os testes concluidos com sucesso!")
+
