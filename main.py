@@ -194,18 +194,18 @@ CORS(app)
 def api_state():
     return jsonify(game_manager.get_state())
 
-@app.route('/api/reset', methods=['POST'])
+@app.route('/api/reset', methods=['GET', 'POST'])
 def api_reset():
-    data = request.get_json() or {}
-    difficulty = data.get('difficulty')
+    data = request.get_json(silent=True) or {}
+    difficulty = data.get('difficulty') or request.args.get('difficulty')
     if difficulty:
         game_manager.set_difficulty(difficulty)
     game_manager.reset()
     return jsonify({"status": "success", "state": game_manager.get_state()})
 
-@app.route('/api/difficulty', methods=['POST'])
+@app.route('/api/difficulty', methods=['GET', 'POST'])
 def api_difficulty():
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     difficulty = data.get('difficulty') or request.args.get('difficulty')
     if not difficulty:
         return jsonify({"error": "Parâmetro 'difficulty' ausente"}), 400
@@ -215,13 +215,18 @@ def api_difficulty():
         return jsonify({"error": f"Dificuldade inválida: '{difficulty}'. Use 'easy', 'medium', 'hard' ou 'impossible'."}), 400
     return jsonify({"status": "success", "state": game_manager.get_state()})
 
-@app.route('/api/move', methods=['POST'])
+@app.route('/api/move', methods=['GET', 'POST'])
 def api_move():
-    data = request.get_json() or {}
-    cell = data.get('cell')
-    if cell is None:
+    data = request.get_json(silent=True) or {}
+    cell_val = data.get('cell') if data.get('cell') is not None else request.args.get('cell')
+    if cell_val is None:
         return jsonify({"error": "Parâmetro 'cell' ausente"}), 400
     
+    try:
+        cell = int(cell_val)
+    except ValueError:
+        return jsonify({"error": "Célula inválida"}), 400
+
     success = game_manager.player_move(cell)
     return jsonify({"success": success, "state": game_manager.get_state()})
 

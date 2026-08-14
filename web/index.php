@@ -279,9 +279,11 @@
           currentBoard = Array(9).fill('');
           logEvent('=== NOVO JOGO INICIADO ===', 'success');
           updateUI(data.state);
+        } else {
+          logEvent(`Falha ao reiniciar: ${data.error || 'Erro no backend'}`, 'error');
         }
       } catch (err) {
-        logEvent('Erro ao reiniciar jogo.', 'error');
+        logEvent('Erro de comunicação ao reiniciar jogo.', 'error');
         isPolling = true;
       }
     }

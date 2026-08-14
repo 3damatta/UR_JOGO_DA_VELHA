@@ -27,10 +27,12 @@ if ($action === 'state') {
         echo $response;
     }
 } elseif ($action === 'reset') {
+    $data = json_encode(new stdClass());
     $opts = [
         "http" => [
             "method" => "POST",
-            "header" => "Content-Type: application/json\r\n"
+            "header" => "Content-Type: application/json\r\nContent-Length: " . strlen($data) . "\r\n",
+            "content" => $data
         ]
     ];
     $context = stream_context_create($opts);
