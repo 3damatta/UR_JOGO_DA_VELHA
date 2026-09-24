@@ -127,6 +127,25 @@ python vision/board_calibration.py
 
 ---
 
+## Calibração das Posições do Robô UR3
+
+Para ajustar ou recalibrar as posições do robô em um novo setup (HOME, Ponto de Captura e Células 0-8), você pode inserir os valores diretamente em **GRAUS (°)** lidos na tela de **Posições da Articulação** no Teach Pendant.
+
+```bash
+# Modo Interativo (Menu Guia)
+python update_positions.py
+
+# Visualizar todas as posições salvas em Graus e Radianos
+python update_positions.py --view
+
+# Atualizar uma célula específica diretamente via linha de comando (ex: Célula 7)
+python update_positions.py --cell 7 --deg -87.14 -88.12 103.93 -105.88 -89.81 -21.33
+```
+
+O script converte automaticamente os valores em graus para radianos e atualiza o arquivo `ur3/positions_config.json` com backup de segurança.
+
+---
+
 ## Iniciando o Jogo
 
 ### Modo Manual (Para Desenvolvimento/Testes)

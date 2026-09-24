@@ -85,6 +85,28 @@ if ($action === 'state') {
     } else {
         echo $response;
     }
+} elseif ($action === 'positions') {
+    $method = $_SERVER['REQUEST_METHOD'];
+    if ($method === 'POST') {
+        $input = file_get_contents('php://input');
+        $opts = [
+            "http" => [
+                "method" => "POST",
+                "header" => "Content-Type: application/json\r\nContent-Length: " . strlen($input) . "\r\n",
+                "content" => $input
+            ]
+        ];
+        $context = stream_context_create($opts);
+        $response = @file_get_contents("$python_api_url/positions", false, $context);
+    } else {
+        $response = @file_get_contents("$python_api_url/positions");
+    }
+    if ($response === false) {
+        http_response_code(502);
+        echo json_encode(["error" => "Não foi possível comunicar com o endpoint de posições no backend."]);
+    } else {
+        echo $response;
+    }
 } else {
     http_response_code(400);
     echo json_encode(["error" => "Ação inválida."]);

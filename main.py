@@ -230,6 +230,65 @@ def api_move():
     success = game_manager.player_move(cell)
     return jsonify({"success": success, "state": game_manager.get_state()})
 
+@app.route('/api/positions', methods=['GET', 'POST'])
+def api_positions():
+    from scripts.update_positions import load_positions, save_positions, deg_to_rad, rad_to_deg
+    if request.method == 'POST':
+        data = request.get_json(silent=True) or {}
+        target = data.get('target')      # 'home', 'pick', or '0'..'8'
+        degrees = data.get('degrees')    # [b, o, c, p1, p2, p3]
+
+        if not target or not degrees or len(degrees) != 6:
+            return jsonify({"error": "Parâmetros 'target' e 'degrees' (6 valores) são obrigatórios"}), 400
+
+        try:
+            degs = [float(d) for d in degrees]
+            rads = deg_to_rad(degs)
+            pos_data = load_positions()
+
+            if target == 'home':
+                pos_data['home_pose']['joint_angles'] = rads
+            elif target == 'pick':
+                pos_data['pick']['joint_angles'] = rads
+            elif str(target) in pos_data.get('board', {}).get('cells', {}):
+                pos_data['board']['cells'][str(target)]['joint_angles'] = rads
+            else:
+                return jsonify({"error": f"Alvo inválido: '{target}'"}), 400
+
+            save_positions(pos_data)
+
+            # Recarrega em memória se o controlador do robô estiver ativo
+            if game_manager.robot:
+                game_manager.robot.pos = pos_data
+
+            return jsonify({"status": "success", "target": target, "degrees": degs, "radians": rads})
+        except Exception as e:
+            return jsonify({"error": f"Erro ao atualizar posição: {str(e)}"}), 500
+
+    # GET: retorna posições formatadas com graus e radianos
+    try:
+        pos_data = load_positions()
+        res = {
+            "home": {
+                "radians": pos_data['home_pose']['joint_angles'],
+                "degrees": rad_to_deg(pos_data['home_pose']['joint_angles'])
+            },
+            "pick": {
+                "radians": pos_data['pick']['joint_angles'],
+                "degrees": rad_to_deg(pos_data['pick']['joint_angles'])
+            },
+            "cells": {}
+        }
+        for k, v in pos_data.get('board', {}).get('cells', {}).items():
+            res["cells"][k] = {
+                "label": v.get("label", ""),
+                "radians": v.get("joint_angles", []),
+                "degrees": rad_to_deg(v.get("joint_angles", []))
+            }
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # Pré-codifica a imagem de fallback "Sem conexao de camera" uma única vez na inicialização
 _fallback_jpeg = None
 try:
