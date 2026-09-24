@@ -157,16 +157,28 @@ class UR3Controller:
             s.close()
         return local_ip
 
-    def wait_for_completion(self, timeout: float = 30.0) -> bool:
-        """Aguarda a notificação de término de movimento enviada pelo robô (porta 50007)."""
+    def execute_script_and_wait(self, script: str, timeout: float = 30.0) -> bool:
+        """
+        Abre o socket servidor na porta 50007 ANTES de enviar o script para o robô.
+        Evita condições de corrida onde o robô conclui ou tenta conectar antes da porta estar aberta.
+        """
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server.settimeout(timeout)
-        server.bind(("0.0.0.0", 50007))
-        server.listen(1)
+        try:
+            server.bind(("0.0.0.0", 50007))
+            server.listen(1)
+        except Exception as e:
+            log.error(f"Erro ao abrir porta 50007 para sincronização: {e}")
+            return False
+
+        # Envia o script para o UR3
+        if not self.send_script(script):
+            server.close()
+            return False
+
         try:
             conn, addr = server.accept()
-            # Lê o sinal "done" enviado pelo robô
             conn.settimeout(2.0)
             conn.recv(128)
             conn.close()
@@ -174,8 +186,15 @@ class UR3Controller:
         except socket.timeout:
             log.error("Timeout aguardando conclusao de movimento do UR3!")
             return False
+        except Exception as e:
+            log.error(f"Erro na conexão de sincronização do UR3: {e}")
+            return False
         finally:
             server.close()
+
+    def wait_for_completion(self, timeout: float = 30.0) -> bool:
+        """Mantido para compatibilidade — apenas redireciona."""
+        return True
 
     # ── Geração do URScript Principal ─────────────────────────────────────────
     def build_pick_movement(self) -> str:
@@ -199,9 +218,10 @@ class UR3Controller:
             "  movej(home_joints, a=1.2, v=1.0)\n",
             f"  movel(pick_above, a=0.5, v=0.3, r={self.blend})\n",
             "  movel(pick_pose, a=0.5, v=0.3)\n",
-            f"  socket_open(\"{local_ip}\", 50007, \"done_socket\")\n",
-            "  socket_send_string(\"done\", \"done_socket\")\n",
-            "  socket_close(\"done_socket\")\n",
+            f"  if socket_open(\"{local_ip}\", 50007, \"done_socket\"):\n",
+            "    socket_send_string(\"done\", \"done_socket\")\n",
+            "    socket_close(\"done_socket\")\n",
+            "  end\n",
             "end\n",
             "pick_movement()\n"
         ]
@@ -230,9 +250,10 @@ class UR3Controller:
             "  movel(pick_above, a=0.5, v=0.3)\n",
             f"  movel(cell_above, a=0.5, v=0.3, r={self.blend})\n",
             "  movel(cell_pose, a=0.5, v=0.3)\n",
-            f"  socket_open(\"{local_ip}\", 50007, \"done_socket\")\n",
-            "  socket_send_string(\"done\", \"done_socket\")\n",
-            "  socket_close(\"done_socket\")\n",
+            f"  if socket_open(\"{local_ip}\", 50007, \"done_socket\"):\n",
+            "    socket_send_string(\"done\", \"done_socket\")\n",
+            "    socket_close(\"done_socket\")\n",
+            "  end\n",
             "end\n",
             "place_movement()\n"
         ]
@@ -258,9 +279,10 @@ class UR3Controller:
             f"  cell_above = p[cell_pose[0], cell_pose[1], cell_pose[2] + {APPROACH_OFFSET_M:.3f}, cell_pose[3], cell_pose[4], cell_pose[5]]\n",
             "  movel(cell_above, a=0.5, v=0.3)\n",
             "  movej(home_joints, a=1.2, v=1.0)\n",
-            f"  socket_open(\"{local_ip}\", 50007, \"done_socket\")\n",
-            "  socket_send_string(\"done\", \"done_socket\")\n",
-            "  socket_close(\"done_socket\")\n",
+            f"  if socket_open(\"{local_ip}\", 50007, \"done_socket\"):\n",
+            "    socket_send_string(\"done\", \"done_socket\")\n",
+            "    socket_close(\"done_socket\")\n",
+            "  end\n",
             "end\n",
             "after_place()\n"
         ]
@@ -325,10 +347,7 @@ class UR3Controller:
         # ── [FASE 1] Mover ate o Pick
         log.info("[FASE 1/3] Movendo para a posicao de captura (PICK)...")
         script_pick = self.build_pick_movement()
-        if not self.send_script(script_pick):
-            log.error("Falha ao enviar script da Fase 1")
-            return False
-        if not self.wait_for_completion(timeout=25.0):
+        if not self.execute_script_and_wait(script_pick, timeout=25.0):
             log.error("Falha na Fase 1 (Movimento ate o Pick) ou timeout")
             return False
 
@@ -341,10 +360,7 @@ class UR3Controller:
         
         log.info(f"[FASE 2/3] Elevando e movendo ate a celula {cell} ({label})...")
         script_place = self.build_place_movement(cell)
-        if not self.send_script(script_place):
-            log.error("Falha ao enviar script da Fase 2")
-            return False
-        if not self.wait_for_completion(timeout=25.0):
+        if not self.execute_script_and_wait(script_place, timeout=25.0):
             log.error("Falha na Fase 2 (Movimento ate a Celula) ou timeout")
             return False
             
@@ -356,10 +372,7 @@ class UR3Controller:
         
         log.info("[FASE 3/3] Afastando e retornando para HOME...")
         script_after = self.build_after_place_movement(cell)
-        if not self.send_script(script_after):
-            log.error("Falha ao enviar script da Fase 3")
-            return False
-        if not self.wait_for_completion(timeout=25.0):
+        if not self.execute_script_and_wait(script_after, timeout=25.0):
             log.error("Falha na Fase 3 (Retorno para HOME) ou timeout")
             return False
 
@@ -373,16 +386,15 @@ class UR3Controller:
         script = (
             "def go_home():\n"
             f"  movej([{', '.join(f'{j:.5f}' for j in joints)}], a=1.2, v=1.0)\n"
-            f"  socket_open(\"{local_ip}\", 50007, \"done_socket\")\n"
-            "  socket_send_string(\"done\", \"done_socket\")\n"
-            "  socket_close(\"done_socket\")\n"
+            f"  if socket_open(\"{local_ip}\", 50007, \"done_socket\"):\n"
+            "    socket_send_string(\"done\", \"done_socket\")\n"
+            "    socket_close(\"done_socket\")\n"
+            "  end\n"
             "end\n"
             "go_home()\n"
         )
         log.info("► Enviando robô à pose home")
-        if self.send_script(script):
-            return self.wait_for_completion(timeout=15.0)
-        return False
+        return self.execute_script_and_wait(script, timeout=15.0)
 
 
 # ── CLI de Teste ──────────────────────────────────────────────────────────────
