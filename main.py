@@ -289,6 +289,54 @@ def api_positions():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/calibrate', methods=['GET', 'POST'])
+def api_calibrate():
+    cal_file = os.path.join(BASE_DIR, 'config', 'calibration.json')
+    if request.method == 'POST':
+        data = request.get_json(silent=True) or {}
+        points = data.get('points')  # [[x0, y0], [x1, y1], [x2, y2], [x3, y3]]
+        if not points or len(points) != 4:
+            return jsonify({"error": "Parâmetro 'points' com exatamente 4 pontos é obrigatório"}), 400
+
+        try:
+            pts = np.float32(points)
+            board_size = 300
+            dst = np.float32([
+                [0, 0],
+                [board_size, 0],
+                [board_size, board_size],
+                [0, board_size]
+            ])
+            H, _ = cv2.findHomography(pts, dst)
+
+            cal_data = {
+                "corners": points,
+                "homography": H.tolist(),
+                "board_size": board_size
+            }
+            os.makedirs(os.path.dirname(cal_file), exist_ok=True)
+            with open(cal_file, 'w', encoding='utf-8') as f:
+                json.dump(cal_data, f, indent=2)
+
+            global detector
+            if detector:
+                detector.homography = H
+                log.info("✓ Nova calibração salva via Web e aplicada na memória do detector!")
+
+            return jsonify({"status": "success", "calibration": cal_data})
+        except Exception as e:
+            log.error(f"Erro ao calcular/salvar calibração: {e}")
+            return jsonify({"error": f"Erro na calibração: {str(e)}"}), 500
+
+    # GET: retorna a calibração atual se existir
+    if os.path.exists(cal_file):
+        try:
+            with open(cal_file, encoding='utf-8') as f:
+                return jsonify(json.load(f))
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+    return jsonify({"corners": [], "homography": None, "board_size": 300})
+
 # Pré-codifica a imagem de fallback "Sem conexao de camera" uma única vez na inicialização
 _fallback_jpeg = None
 try:
@@ -320,6 +368,26 @@ def api_stream():
                     yield (b'--frame\r\n'
                            b'Content-Type: image/jpeg\r\n\r\n' + _fallback_jpeg + b'\r\n')
             time.sleep(0.06)  # ~15 FPS
+    return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/api/stream/raw')
+def api_stream_raw():
+    def generate():
+        while True:
+            global detector
+            frame = None
+            if detector:
+                with detector.jpeg_lock:
+                    frame = getattr(detector, 'latest_raw_jpeg', None) or detector.latest_jpeg
+
+            if frame is not None:
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            else:
+                if _fallback_jpeg is not None:
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + _fallback_jpeg + b'\r\n')
+            time.sleep(0.06)
     return Response(generate(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 

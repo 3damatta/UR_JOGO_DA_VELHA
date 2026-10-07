@@ -2,6 +2,9 @@
 
 Sistema integrado onde um robô Universal Robots UR3 joga Jogo da Velha contra um humano, usando visão computacional (OpenCV), um orquestrador central em Python (Flask) e um Dashboard Web em PHP.
 
+> [!TIP]
+> **Primeira vez rodando o projeto?** Veja o [TUTORIAL.md](file:///c:/Users/PC/OneDrive/Documentos/PROJETOS/Nova%20pasta/ur3_tictactoe/TUTORIAL.md) para um passo a passo completo e detalhado (do zero à primeira partida).
+
 > [!NOTE]
 > Esta versão foi simplificada e otimizada, economizando significativamente os recursos de CPU e memória do Raspberry Pi 3B+.
 
@@ -40,6 +43,7 @@ Sistema integrado onde um robô Universal Robots UR3 joga Jogo da Velha contra u
 
 ```
 ur3_tictactoe/
+├── TUTORIAL.md                      # Tutorial passo a passo completo para iniciantes
 ├── main.py                          # Orquestrador central, API Flask e motor do jogo
 ├── requirements.txt                 # Dependências Python (Flask, OpenCV, PyYAML, etc.)
 ├── config/

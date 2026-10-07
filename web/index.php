@@ -27,9 +27,14 @@
         <p class="header-subtitle">Centro de Treinamento e Desenvolvimento da Indústria 4.0 • UR3 Jogo da Velha</p>
       </div>
     </div>
-    <div class="status-badge">
-      <div id="statusDot" class="status-dot offline"></div>
-      <span id="statusLabel">Offline</span>
+    <div style="display: flex; gap: 1rem; align-items: center;">
+      <a href="calibrate.php" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(0, 212, 255, 0.15); border: 1px solid var(--color-player); color: var(--color-player); padding: 0.5rem 1rem; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 0.85rem; transition: all 0.2s ease;">
+        📷 Calibrar Câmera
+      </a>
+      <div class="status-badge">
+        <div id="statusDot" class="status-dot offline"></div>
+        <span id="statusLabel">Offline</span>
+      </div>
     </div>
   </header>
 
@@ -38,7 +43,7 @@
     <div class="panel">
       <div class="panel-title">
         <span>Visão da Câmera (Câmera USB)</span>
-        <span style="font-size: 0.8rem; font-weight: normal; color: var(--color-text-muted);" id="camResolution">640x480 (HSV)</span>
+        <a href="calibrate.php" style="font-size: 0.8rem; font-weight: 600; color: var(--color-player); text-decoration: none;">⚙️ Ajustar Calibração</a>
       </div>
       <div class="camera-container">
         <!-- O source é atualizado dinamicamente via JS com o IP correto do backend -->

@@ -256,9 +256,13 @@ class PieceDetector:
 
                 # Pre-codifica a imagem em JPEG em background para evitar gargalo na API Flask
                 ret_jpeg, jpeg_buf = cv2.imencode('.jpg', display, [cv2.IMWRITE_JPEG_QUALITY, 60])
-                if ret_jpeg:
+                ret_raw, raw_buf = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
+                if ret_jpeg or ret_raw:
                     with self.jpeg_lock:
-                        self.latest_jpeg = jpeg_buf.tobytes()
+                        if ret_jpeg:
+                            self.latest_jpeg = jpeg_buf.tobytes()
+                        if ret_raw:
+                            self.latest_raw_jpeg = raw_buf.tobytes()
 
                 # ── Publica imagem anotada periodicamente
                 now = time.time()
