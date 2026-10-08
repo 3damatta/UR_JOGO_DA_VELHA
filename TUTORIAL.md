@@ -8,12 +8,36 @@ Este guia é um tutorial prático e direto para operar, calibrar e testar o sist
 ---
 
 ## 📋 Sumário
+0. [⚡ Inicialização Automática no Boot (Sem Teclado/Monitor/SSH)](#0--inicialização-automática-no-boot-sem-tecladomonitorssh)
 1. [Conexão SSH via Hotspot](#1-conexão-ssh-via-hotspot)
 2. [Passo 1 — Validação do IP do Robô UR3](#passo-1--validação-do-ip-do-robô-ur3)
 3. [Passo 2 — Setup e Calibração da Câmera](#passo-2--setup-e-calibração-da-câmera)
 4. [Passo 3 — Configuração dos Pontos de Rota (Posições do Robô)](#passo-3--configuração-dos-pontos-de-rota-posições-do-robô)
 5. [Passo 4 — Comandos de Testes e Validação de Movimentos](#passo-4--comandos-de-testes-e-validação-de-movimentos)
 6. [Passo 5 — Iniciando o Jogo e Acessando a Interface Web](#passo-5--iniciando-o-jogo-e-acessando-a-interface-web)
+
+---
+
+## 0. ⚡ Inicialização Automática no Boot (Sem Teclado/Monitor/SSH)
+
+Para fazer com que todo o sistema (Hotspot + Servidor Python + Dashboard Web PHP) **inicie automaticamente ao ligar o Raspberry Pi na tomada**, execute este comando **uma única vez** via SSH:
+
+```bash
+sudo bash scripts/install_service.sh
+```
+
+> [!IMPORTANT]
+> **Como Funciona:**
+> - Ao energizar o Raspberry Pi, o serviço `ur3-tictactoe.service` roda sozinho em segundo plano via `systemd`.
+> - O Wi-Fi Hotspot fica disponível e o Dashboard Web sobe na porta **8000**.
+> - **Não é necessário monitor, teclado, mouse nem conexão SSH.** O operador só precisa ligar o Pi e abrir o navegador no smartphone/PC!
+>
+> **Comandos de Gerenciamento do Serviço (se necessário via SSH):**
+> - **Ver status:** `sudo systemctl status ur3-tictactoe`
+> - **Reiniciar:** `sudo systemctl restart ur3-tictactoe`
+> - **Parar:** `sudo systemctl stop ur3-tictactoe`
+> - **Logs ao vivo:** `sudo journalctl -u ur3-tictactoe -f`
+
 
 ---
 
