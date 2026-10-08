@@ -27,9 +27,12 @@
         <p class="header-subtitle">Centro de Treinamento e Desenvolvimento da Indústria 4.0 • UR3 Jogo da Velha</p>
       </div>
     </div>
-    <div style="display: flex; gap: 1rem; align-items: center;">
-      <a href="calibrate.php" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(0, 212, 255, 0.15); border: 1px solid var(--color-player); color: var(--color-player); padding: 0.5rem 1rem; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 0.85rem; transition: all 0.2s ease;">
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+      <a href="calibrate.php" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(0, 212, 255, 0.15); border: 1px solid var(--color-player); color: var(--color-player); padding: 0.5rem 0.85rem; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 0.85rem; transition: all 0.2s ease;">
         📷 Calibrar Câmera
+      </a>
+      <a href="positions.php" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(16, 185, 129, 0.15); border: 1px solid var(--color-success); color: var(--color-success); padding: 0.5rem 0.85rem; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 0.85rem; transition: all 0.2s ease;">
+        📍 Posições & Testes
       </a>
       <div class="status-badge">
         <div id="statusDot" class="status-dot offline"></div>

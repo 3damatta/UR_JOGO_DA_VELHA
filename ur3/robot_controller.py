@@ -396,6 +396,24 @@ class UR3Controller:
         log.info("► Enviando robô à pose home")
         return self.execute_script_and_wait(script, timeout=15.0)
 
+    def move_to_joints(self, joint_angles: list) -> bool:
+        """Envia o robô para os ângulos de articulação especificados (em radianos)."""
+        local_ip = self.get_local_ip()
+        jstr = ", ".join(f"{j:.5f}" for j in joint_angles)
+        script = (
+            "def move_to_joints():\n"
+            f"  movej([{jstr}], a=1.2, v=1.0)\n"
+            f"  if socket_open(\"{local_ip}\", 50007, \"done_socket\"):\n"
+            "    socket_send_string(\"done\", \"done_socket\")\n"
+            "    socket_close(\"done_socket\")\n"
+            "  end\n"
+            "end\n"
+            "move_to_joints()\n"
+        )
+        log.info(f"► Enviando robô para articulações: [{jstr}]")
+        return self.execute_script_and_wait(script, timeout=20.0)
+
+
 
 # ── CLI de Teste ──────────────────────────────────────────────────────────────
 if __name__ == '__main__':

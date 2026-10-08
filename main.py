@@ -237,6 +237,27 @@ def api_positions():
     from scripts.update_positions import load_positions, save_positions, deg_to_rad, rad_to_deg
     if request.method == 'POST':
         data = request.get_json(silent=True) or {}
+        
+        # Suporte a salvamento em lote de todas as posições
+        all_positions = data.get('all_positions')
+        if all_positions:
+            try:
+                pos_data = load_positions()
+                if 'home' in all_positions and 'degrees' in all_positions['home']:
+                    pos_data['home_pose']['joint_angles'] = deg_to_rad([float(d) for d in all_positions['home']['degrees']])
+                if 'pick' in all_positions and 'degrees' in all_positions['pick']:
+                    pos_data['pick']['joint_angles'] = deg_to_rad([float(d) for d in all_positions['pick']['degrees']])
+                if 'cells' in all_positions and isinstance(all_positions['cells'], dict):
+                    for ck, cv in all_positions['cells'].items():
+                        if str(ck) in pos_data.get('board', {}).get('cells', {}) and 'degrees' in cv:
+                            pos_data['board']['cells'][str(ck)]['joint_angles'] = deg_to_rad([float(d) for d in cv['degrees']])
+                save_positions(pos_data)
+                if game_manager and game_manager.robot:
+                    game_manager.robot.pos = pos_data
+                return jsonify({"status": "success", "message": "Todas as posições foram atualizadas com sucesso!"})
+            except Exception as e:
+                return jsonify({"error": f"Erro ao atualizar posições em lote: {str(e)}"}), 500
+
         target = data.get('target')      # 'home', 'pick', or '0'..'8'
         degrees = data.get('degrees')    # [b, o, c, p1, p2, p3]
 
@@ -260,7 +281,7 @@ def api_positions():
             save_positions(pos_data)
 
             # Recarrega em memória se o controlador do robô estiver ativo
-            if game_manager.robot:
+            if game_manager and game_manager.robot:
                 game_manager.robot.pos = pos_data
 
             return jsonify({"status": "success", "target": target, "degrees": degs, "radians": rads})
@@ -290,6 +311,89 @@ def api_positions():
         return jsonify(res)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route('/api/test', methods=['POST'])
+def api_test():
+    from scripts.update_positions import load_positions, deg_to_rad
+    data = request.get_json(silent=True) or {}
+    action = data.get('action')
+
+    if not action:
+        return jsonify({"error": "Parâmetro 'action' é obrigatório"}), 400
+
+    robot = game_manager.robot if game_manager else None
+
+    try:
+        if action == 'home':
+            if not robot:
+                return jsonify({"status": "simulated", "message": "[SIMULAÇÃO] Robô offline. Comando Home executado."})
+            success = robot.go_home()
+            return jsonify({"status": "success" if success else "error", "message": "Robô movido para HOME com sucesso!" if success else "Falha ao mover robô para HOME."})
+
+        elif action == 'gripper_open':
+            if not robot:
+                return jsonify({"status": "simulated", "message": "[SIMULAÇÃO] Garra OnRobot aberta."})
+            robot._gripper_open()
+            return jsonify({"status": "success", "message": "Garra OnRobot aberta com sucesso!"})
+
+        elif action == 'gripper_close':
+            if not robot:
+                return jsonify({"status": "simulated", "message": "[SIMULAÇÃO] Garra OnRobot fechada."})
+            robot._gripper_close()
+            return jsonify({"status": "success", "message": "Garra OnRobot fechada com sucesso!"})
+
+        elif action == 'move_joint':
+            target = data.get('target')
+            degrees = data.get('degrees')
+            if degrees and len(degrees) == 6:
+                rads = deg_to_rad([float(d) for d in degrees])
+            elif target:
+                pos_data = load_positions()
+                if target == 'home':
+                    rads = pos_data['home_pose']['joint_angles']
+                elif target == 'pick':
+                    rads = pos_data['pick']['joint_angles']
+                elif str(target) in pos_data.get('board', {}).get('cells', {}):
+                    rads = pos_data['board']['cells'][str(target)]['joint_angles']
+                else:
+                    return jsonify({"error": f"Alvo inválido: '{target}'"}), 400
+            else:
+                return jsonify({"error": "Informe 'target' ou 'degrees' (6 valores)"}), 400
+
+            if not robot:
+                return jsonify({"status": "simulated", "message": f"[SIMULAÇÃO] Robô movido para articulações: {rads}"})
+
+            success = robot.move_to_joints(rads)
+            return jsonify({"status": "success" if success else "error", "message": "Movimento de articulação concluído com sucesso!" if success else "Falha na movimentação do robô."})
+
+        elif action == 'move_cell':
+            cell = data.get('cell')
+            if cell is None:
+                return jsonify({"error": "Parâmetro 'cell' (0-8) é obrigatório"}), 400
+            cell = int(cell)
+            if not robot:
+                return jsonify({"status": "simulated", "message": f"[SIMULAÇÃO] Sequência Pick & Place para célula {cell} simulada com sucesso."})
+
+            success = robot.place_piece(cell)
+            return jsonify({"status": "success" if success else "error", "message": f"Peça posicionada na célula {cell} com sucesso!" if success else f"Falha ao posicionar peça na célula {cell}."})
+
+        elif action == 'dry_run':
+            cell = int(data.get('cell', 0))
+            if robot:
+                script = robot.build_place_script(cell)
+            else:
+                from ur3.robot_controller import UR3Controller
+                tmp_ctrl = UR3Controller()
+                script = tmp_ctrl.build_place_script(cell)
+            return jsonify({"status": "success", "cell": cell, "script": script})
+
+        else:
+            return jsonify({"error": f"Ação de teste inválida: '{action}'"}), 400
+
+    except Exception as e:
+        log.error(f"Erro em /api/test: {e}")
+        return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/calibrate', methods=['GET', 'POST'])
 def api_calibrate():

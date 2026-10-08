@@ -146,9 +146,12 @@
       </div>
     </div>
     
-    <div style="display: flex; gap: 1rem; align-items: center;">
-      <a href="index.php" class="btn btn-outline" style="padding: 0.5rem 1rem; font-size: 0.85rem; text-decoration: none;">
-        ⬅️ Voltar ao Dashboard
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+      <a href="index.php" class="btn btn-outline" style="padding: 0.5rem 0.85rem; font-size: 0.85rem; text-decoration: none;">
+        🎮 Jogar
+      </a>
+      <a href="positions.php" class="btn btn-outline" style="padding: 0.5rem 0.85rem; font-size: 0.85rem; text-decoration: none; border-color: var(--color-success); color: var(--color-success);">
+        📍 Posições & Testes
       </a>
       <div class="status-badge">
         <div id="statusDot" class="status-dot online"></div>

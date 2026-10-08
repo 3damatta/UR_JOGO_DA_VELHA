@@ -158,7 +158,18 @@ if ($action === 'state') {
     } else {
         echo $res;
     }
+} elseif ($action === 'test') {
+    $input = file_get_contents('php://input');
+    if (!$input) $input = json_encode(new stdClass());
+    $res = proxy_request("$python_api_url/test", 'POST', $input);
+    if ($res === false) {
+        http_response_code(502);
+        echo json_encode(["error" => "Não foi possível comunicar com o endpoint de testes no backend."]);
+    } else {
+        echo $res;
+    }
 } else {
     http_response_code(400);
     echo json_encode(["error" => "Ação inválida."]);
 }
+

@@ -109,38 +109,42 @@ nano config/settings.yaml
 
 ## Passo 3 — Configuração dos Pontos de Rota (Posições do Robô)
 
-Todas as posições (HOME, Ponto de Captura e Células 0 a 8) são configuradas inserindo os valores das **6 articulações do robô em GRAUS (°)** através do configurador interativo.
+Todas as posições (HOME, Ponto de Captura e Células 0 a 8) podem ser configuradas online pela Dashboard Web ou via terminal SSH. Os valores das **6 articulações do robô são inseridos em GRAUS (°)**.
 
 ### A) Obter os Ângulos no Teach Pendant
 1. No Teach Pendant do UR3, acesse a aba **Move ➔ Joint** (ou **Posições da Articulação**).
 2. Você verá os 6 ângulos em graus referentes a:
    `Base`, `Ombro`, `Cotovelo`, `Pulso 1`, `Pulso 2` e `Pulso 3`.
 
-### B) Uso do Configurador Interativo (via SSH)
-No terminal SSH do Raspberry Pi, execute o script de atualização de posições:
+### B) Configuração Online pela Dashboard Web (Recomendado — Sem Terminal!)
+Você pode atualizar as posições e realizar testes de movimento diretamente pelo navegador:
+
+1. No seu navegador, acesse a página de posições:
+   ```text
+   http://<IP_DO_HOTSPOT>:8000/positions.php
+   ```
+   *(Ou clique no botão **"📍 Posições & Testes"** no cabeçalho de qualquer página da Dashboard).*
+
+2. **Como atualizar valores online:**
+   * **Modo Direto:** Digite os 6 valores em graus (° com casas decimais) diretamente nos campos da posição desejada (HOME, PICK ou Células 0 a 8) e clique em **"💾 Salvar"**.
+   * **Modo Copiar & Colar (Teach Pendant):** No topo da tela, cole a linha completa de 6 números lidos no Teach Pendant (ex: `-87.14 -88.12 103.93 -105.88 -89.81 -21.33`), selecione o alvo no menu suspenso e clique em **"Aplicar"**.
+   * Para salvar todas as posições alteradas de uma só vez, clique em **"💾 Salvar TODAS as Posições"**.
+
+3. **Botões de Teste Online de Posições e Movimentos:**
+   * **"🎯 Mover Robô Aqui"**: Envia o robô diretamente para os 6 ângulos de articulação configurados (movej) para testar se a posição física no robô está precisa.
+   * **"🤖 Pick & Place"**: Executa a sequência real completa de captura e posicionamento para aquela célula específica.
+   * **"🏠 Mover para HOME"**: Retorna o braço do robô para a pose inicial de segurança com 1 clique.
+   * **"✋ Abrir Garra" / "✊ Fechar Garra"**: Testa o acionamento da garra OnRobot online.
+   * **"📜 Script"**: Abre uma janela com a simulação URScript (Dry-Run) gerada para aquela célula.
+
+---
+
+### C) Uso do Configurador via Terminal SSH (Alternativo)
+Caso prefira usar o terminal SSH, execute:
 ```bash
 python update_positions.py
 ```
-
-O menu interativo será exibido no terminal:
-```text
-===============================================================
-    UR3 TIC-TAC-TOE — CONFIGURADOR DE POSIÇÕES DAS ARTICULAÇÕES
-===============================================================
- [H] Atualizar Posição HOME (Inicial)
- [P] Atualizar Ponto de CAPTURA (Pick/Estoque)
- [0..8] Atualizar uma Célula Específica do Tabuleiro (ex: 7)
- [A] Recalibrar TODAS as posições em sequência (Wizard Completo)
- [V] Visualizar todas as posições atuais (Graus e Radianos)
- [S] Sair
-===============================================================
-```
-
-**Como operar o menu interativo:**
-1. Para recalibrar tudo do zero, escolha **`A`** (Wizard Completo). Para atualizar uma posição individual, digite **`H`** (Home), **`P`** (Pick) ou o número da célula (**`0`** a **`8`**).
-2. Cole ou digite os 6 valores lidos no Teach Pendant separados por espaço (exemplo: `-87.14 -88.12 103.93 -105.88 -89.81 -21.33`).
-3. O script converterá automaticamente os graus para radianos e salvará as posições.
-4. Para conferir todas as posições atualmente salvas, escolha a opção **`V`**.
+O menu interativo permitirá visualizar (`V`), atualizar posições individuais (`H`, `P`, `0..8`) ou executar o assistente completo (`A`).
 
 ---
 
