@@ -252,25 +252,26 @@ class PieceDetector:
 
                 # ── Visualização: grade no frame original
                 self._draw_board_overlay(display, frame, warped, player_dets)
-                self.latest_frame = display.copy()
 
-                # Pre-codifica a imagem em JPEG em background para evitar gargalo na API Flask
-                ret_jpeg, jpeg_buf = cv2.imencode('.jpg', display, [cv2.IMWRITE_JPEG_QUALITY, 60])
-                ret_raw, raw_buf = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
-                if ret_jpeg or ret_raw:
-                    with self.jpeg_lock:
-                        if ret_jpeg:
-                            self.latest_jpeg = jpeg_buf.tobytes()
-                        if ret_raw:
-                            self.latest_raw_jpeg = raw_buf.tobytes()
+            self.latest_frame = display.copy()
 
-                # ── Publica imagem anotada periodicamente
-                now = time.time()
-                if now - last_img_publish > publish_interval:
+            # Pre-codifica a imagem em JPEG em background (mesmo se descalibrado) para a API Flask
+            ret_jpeg, jpeg_buf = cv2.imencode('.jpg', display, [cv2.IMWRITE_JPEG_QUALITY, 60])
+            ret_raw, raw_buf = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 60])
+            if ret_jpeg or ret_raw:
+                with self.jpeg_lock:
                     if ret_jpeg:
-                        b64 = base64.b64encode(jpeg_buf).decode()
-                        self._publish(MQTT_CFG['topic_board_image'], {"image": b64})
-                        last_img_publish = now
+                        self.latest_jpeg = jpeg_buf.tobytes()
+                    if ret_raw:
+                        self.latest_raw_jpeg = raw_buf.tobytes()
+
+            # ── Publica imagem anotada periodicamente
+            now = time.time()
+            if now - last_img_publish > publish_interval:
+                if ret_jpeg:
+                    b64 = base64.b64encode(jpeg_buf).decode()
+                    self._publish(MQTT_CFG['topic_board_image'], {"image": b64})
+                    last_img_publish = now
 
             if self.show_window:
                 if self.latest_frame is not None:
