@@ -82,12 +82,18 @@ class PieceDetector:
     def _load_calibration(self):
         cal_file = os.path.join(BASE_DIR, CAM_CFG['calibration_file'])
         if not os.path.exists(cal_file):
-            log.warning("Arquivo de calibração não encontrado. Execute board_calibration.py primeiro.")
+            log.warning("Arquivo de calibração não encontrado. Acesse calibrate.php no navegador para calibrar.")
             return
-        with open(cal_file) as f:
-            data = json.load(f)
-        self.homography = np.array(data['homography'])
-        log.info("✓ Calibração carregada")
+        try:
+            with open(cal_file, encoding='utf-8') as f:
+                data = json.load(f)
+            if data and isinstance(data, dict) and 'homography' in data and data['homography']:
+                self.homography = np.array(data['homography'])
+                log.info("✓ Calibração de câmera carregada com sucesso")
+            else:
+                log.warning("Arquivo de calibração incompleto. Recalibre em calibrate.php.")
+        except Exception as e:
+            log.warning(f"Não foi possível carregar o arquivo de calibração ({e}). Recalibre em calibrate.php.")
 
     # ── MQTT ──────────────────────────────────────────────────────────────────
     def _setup_mqtt(self):
