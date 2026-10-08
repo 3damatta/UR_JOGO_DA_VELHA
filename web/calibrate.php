@@ -260,9 +260,14 @@
     const pointColors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
     const pointLabels = ['SE (1)', 'SD (2)', 'ID (3)', 'IE (4)'];
 
-    // Configura o feed bruto da câmera sem warping via Proxy PHP (porta 8000)
+    // Configura o feed bruto da câmera com inteligência de porta (Proxy PHP ou Flask direto)
     const rawFeedImg = document.getElementById('rawFeed');
-    rawFeedImg.src = 'api.php?action=stream_raw';
+    const currentHost = window.location.hostname;
+    rawFeedImg.src = `http://${currentHost}:5000/api/stream/raw`;
+    rawFeedImg.onerror = function() {
+      // Fallback para Proxy PHP (porta 8000) se porta 5000 for bloqueada por firewall
+      rawFeedImg.src = 'api.php?action=stream_raw';
+    };
 
     function logEvent(msg, type = 'info') {
       const logsBox = document.getElementById('logsBox');
@@ -376,22 +381,54 @@
       if (clickedPoints.length !== 4) return;
 
       logEvent('Enviando calibração para o servidor...', 'info');
+      const payload = JSON.stringify({ points: clickedPoints });
+      let saved = false;
+
+      // Tenta enviar via Proxy PHP com timeout
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+
         const res = await fetch('api.php?action=calibrate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ points: clickedPoints })
+          body: payload,
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
         const data = await res.json();
 
         if (data.status === 'success') {
-          logEvent('✓ CALIBRAÇÃO SALVA E APLICADA COM SUCESSO! 🎉', 'success');
-          alert('Calibração salva com sucesso no sistema!');
+          saved = true;
         } else {
-          logEvent(`Erro ao salvar: ${data.error || 'Erro no servidor'}`, 'error');
+          logEvent(`Aviso no proxy: ${data.error || 'Erro no servidor'}`, 'warning');
         }
       } catch (err) {
-        logEvent('Erro de conexão ao salvar calibração.', 'error');
+        logEvent('Proxy PHP demorou para responder. Tentando envio direto à API Python...', 'warning');
+      }
+
+      // Fallback: se o proxy demorar (ex: PHP sem workers), envia direto para a API Python na porta 5000
+      if (!saved) {
+        try {
+          const res = await fetch(`http://${currentHost}:5000/api/calibrate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: payload
+          });
+          const data = await res.json();
+          if (data.status === 'success') {
+            saved = true;
+          } else {
+            logEvent(`Erro ao salvar: ${data.error || 'Erro no servidor'}`, 'error');
+          }
+        } catch (err2) {
+          logEvent('Erro de conexão ao salvar calibração (ambos os servidores indisponíveis).', 'error');
+        }
+      }
+
+      if (saved) {
+        logEvent('✓ CALIBRAÇÃO SALVA E APLICADA COM SUCESSO! 🎉', 'success');
+        alert('Calibração salva com sucesso no sistema!');
       }
     }
 

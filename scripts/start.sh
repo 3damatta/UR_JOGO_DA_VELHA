@@ -10,9 +10,10 @@ echo "================================================="
 echo "  UR3 Jogo da Velha — Iniciando Sistema (Python+PHP)"
 echo "================================================="
 
-# Inicia o PHP Built-in Server em background na porta 8000
-echo "Iniciando servidor Web PHP (Porta 8000)..."
+# Inicia o PHP Built-in Server em background na porta 8000 (com múltiplos workers para evitar travamentos de stream)
+echo "Iniciando servidor Web PHP com multiprocessamento (Porta 8000)..."
 cd "$PROJECT_DIR"
+export PHP_CLI_SERVER_WORKERS=4
 php -S 0.0.0.0:8000 -t web/ > /dev/null 2>&1 &
 PHP_PID=$!
 
