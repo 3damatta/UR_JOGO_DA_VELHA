@@ -185,14 +185,34 @@ class PieceDetector:
             time.sleep(0.01)
 
     def run(self):
-        self.cap = cv2.VideoCapture(CAM_CFG['index'])
+        idx = CAM_CFG['index']
+        log.info(f"Conectando à câmera USB (índice inicial: {idx})...")
+        self.cap = cv2.VideoCapture(idx, cv2.CAP_V4L2)
+        if not self.cap.isOpened():
+            self.cap = cv2.VideoCapture(idx)
+
+        # Busca por índices alternativos (ex: /dev/video1, /dev/video2) se o índice padrão falhar
+        if not self.cap.isOpened():
+            for alt_idx in [1, 2, 0, 3]:
+                if alt_idx == idx:
+                    continue
+                log.warning(f"Tentando câmera no índice alternativo {alt_idx}...")
+                self.cap = cv2.VideoCapture(alt_idx, cv2.CAP_V4L2)
+                if not self.cap.isOpened():
+                    self.cap = cv2.VideoCapture(alt_idx)
+                if self.cap.isOpened():
+                    log.info(f"✓ Câmera conectada com sucesso no índice {alt_idx}!")
+                    break
+
+        if not self.cap.isOpened():
+            log.error("Não foi possível abrir a câmera em nenhum índice (/dev/video*). Verifique a conexão USB.")
+            return
+
+        # Tenta aplicar MJPG para melhor suporte no Raspberry Pi
+        self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,  CAM_CFG['width'])
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CAM_CFG['height'])
         self.cap.set(cv2.CAP_PROP_FPS,          CAM_CFG['fps'])
-
-        if not self.cap.isOpened():
-            log.error("Não foi possível abrir a câmera")
-            return
 
         self.running = True
         self.capture_thread = threading.Thread(target=self._capture_loop, daemon=True, name="Capture")

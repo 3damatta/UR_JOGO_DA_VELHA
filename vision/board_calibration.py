@@ -144,13 +144,28 @@ class BoardCalibrator:
         print(f"\n[OK] Calibracao salva em: {CALIBRATION_FILE}")
 
     def run(self):
-        self.cap = cv2.VideoCapture(self.camera_index)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        idx = self.camera_index
+        self.cap = cv2.VideoCapture(idx, cv2.CAP_V4L2)
+        if not self.cap.isOpened():
+            self.cap = cv2.VideoCapture(idx)
 
         if not self.cap.isOpened():
-            print(f"[ERRO] Nao foi possivel abrir camera indice {self.camera_index}")
+            for alt_idx in [1, 2, 0, 3]:
+                if alt_idx == idx:
+                    continue
+                self.cap = cv2.VideoCapture(alt_idx, cv2.CAP_V4L2)
+                if not self.cap.isOpened():
+                    self.cap = cv2.VideoCapture(alt_idx)
+                if self.cap.isOpened():
+                    break
+
+        if not self.cap.isOpened():
+            print(f"[ERRO] Nao foi possivel abrir camera em nenhum indice (/dev/video*)")
             return False
+
+        self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
         cv2.namedWindow(self.window_name, cv2.WINDOW_NORMAL)
         
