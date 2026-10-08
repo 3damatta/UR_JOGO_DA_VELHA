@@ -415,43 +415,81 @@ class UR3Controller:
 
     def get_current_joints(self) -> list:
         """
-        Lê os 6 ângulos das articulações atuais do UR3 via interface primária/secundária (porta 30002).
-        Retorna uma lista com 6 floats em radianos, ou None se falhar.
+        Lê os 6 ângulos das articulações atuais do UR3 via interface de tempo real (porta 30003)
+        com fallback para a interface secundária (porta 30002).
+        Retorna lista com 6 floats em radianos (arredondados a 5 casas) ou None se falhar.
         """
         import struct
+
+        # 1. Tenta Porta 30003 (Realtime Client Interface)
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(2.0)
+                s.connect((self.ip, 30003))
+                
+                raw_data = b""
+                while len(raw_data) < 2048:
+                    chunk = s.recv(2048)
+                    if not chunk:
+                        break
+                    raw_data += chunk
+
+                i = 0
+                while i <= len(raw_data) - 300:
+                    if i + 4 <= len(raw_data):
+                        pack_len = struct.unpack(">i", raw_data[i:i+4])[0]
+                        if pack_len in (756, 812, 1060, 1108, 1140) and (i + pack_len <= len(raw_data)):
+                            q_bytes = raw_data[i+252 : i+300]
+                            if len(q_bytes) == 48:
+                                q_actual = struct.unpack(">6d", q_bytes)
+                                joints = [round(float(q), 5) for q in q_actual]
+                                log.info(f"✓ Posição lida via porta 30003: {joints}")
+                                return joints
+                    i += 1
+        except Exception as e:
+            log.warning(f"Não foi possível ler articulações via porta 30003 ({e})")
+
+        # 2. Fallback: Tenta Porta 30002 (Secondary Client Interface)
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.settimeout(2.0)
                 s.connect((self.ip, 30002))
-                data = s.recv(4096)
-                if len(data) < 5:
-                    return None
+                raw_data = b""
+                while len(raw_data) < 4096:
+                    chunk = s.recv(2048)
+                    if not chunk:
+                        break
+                    raw_data += chunk
 
                 offset = 0
-                while offset <= len(data) - 5:
-                    length, msg_type = struct.unpack(">IB", data[offset:offset+5])
-                    if length <= 0 or offset + length > len(data):
-                        break
+                while offset <= len(raw_data) - 5:
+                    length, msg_type = struct.unpack(">IB", raw_data[offset:offset+5])
+                    if length <= 0 or offset + length > len(raw_data):
+                        offset += 1
+                        continue
                     if msg_type == 16:  # Robot State Package
                         sub_offset = offset + 5
                         end_offset = offset + length
                         while sub_offset <= end_offset - 5:
-                            sub_len, sub_type = struct.unpack(">IB", data[sub_offset:sub_offset+5])
-                            if sub_len <= 0:
+                            sub_len, sub_type = struct.unpack(">IB", raw_data[sub_offset:sub_offset+5])
+                            if sub_len <= 0 or sub_offset + sub_len > end_offset:
                                 break
                             if sub_type == 1 and sub_len >= 251:  # JOINT_DATA Subpacket
                                 joints = []
                                 j_offset = sub_offset + 5
                                 for _ in range(6):
-                                    q_act = struct.unpack(">d", data[j_offset:j_offset+8])[0]
-                                    joints.append(round(q_act, 5))
+                                    q_act = struct.unpack(">d", raw_data[j_offset:j_offset+8])[0]
+                                    joints.append(round(float(q_act), 5))
                                     j_offset += 41
+                                log.info(f"✓ Posição lida via porta 30002: {joints}")
                                 return joints
                             sub_offset += sub_len
                     offset += length
         except Exception as e:
-            log.error(f"Erro ao ler articulações atuais do UR3: {e}")
+            log.error(f"Erro ao ler articulações via porta 30002 ({e})")
+
         return None
+
 
 
 
