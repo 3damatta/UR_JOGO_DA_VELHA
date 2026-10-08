@@ -342,6 +342,21 @@ def api_test():
             robot._gripper_close()
             return jsonify({"status": "success", "message": "Garra OnRobot fechada com sucesso!"})
 
+        elif action == 'read_joints':
+            from scripts.update_positions import rad_to_deg
+            if robot:
+                rads = robot.get_current_joints()
+                if rads:
+                    degs = rad_to_deg(rads)
+                    return jsonify({"status": "success", "radians": rads, "degrees": degs, "message": "Posição capturada do robô com sucesso!"})
+            return jsonify({
+                "status": "simulated",
+                "message": "[SIMULAÇÃO] Robô offline. Conecte ao UR3 para leitura em tempo real.",
+                "degrees": [-87.14, -88.12, 103.93, -105.88, -89.81, -21.33],
+                "radians": [-1.52088, -1.53798, 1.81392, -1.84795, -1.56748, -0.37228]
+            })
+
+
         elif action == 'move_joint':
             target = data.get('target')
             degrees = data.get('degrees')

@@ -413,6 +413,47 @@ class UR3Controller:
         log.info(f"► Enviando robô para articulações: [{jstr}]")
         return self.execute_script_and_wait(script, timeout=20.0)
 
+    def get_current_joints(self) -> list:
+        """
+        Lê os 6 ângulos das articulações atuais do UR3 via interface primária/secundária (porta 30002).
+        Retorna uma lista com 6 floats em radianos, ou None se falhar.
+        """
+        import struct
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(2.0)
+                s.connect((self.ip, 30002))
+                data = s.recv(4096)
+                if len(data) < 5:
+                    return None
+
+                offset = 0
+                while offset <= len(data) - 5:
+                    length, msg_type = struct.unpack(">IB", data[offset:offset+5])
+                    if length <= 0 or offset + length > len(data):
+                        break
+                    if msg_type == 16:  # Robot State Package
+                        sub_offset = offset + 5
+                        end_offset = offset + length
+                        while sub_offset <= end_offset - 5:
+                            sub_len, sub_type = struct.unpack(">IB", data[sub_offset:sub_offset+5])
+                            if sub_len <= 0:
+                                break
+                            if sub_type == 1 and sub_len >= 251:  # JOINT_DATA Subpacket
+                                joints = []
+                                j_offset = sub_offset + 5
+                                for _ in range(6):
+                                    q_act = struct.unpack(">d", data[j_offset:j_offset+8])[0]
+                                    joints.append(round(q_act, 5))
+                                    j_offset += 41
+                                return joints
+                            sub_offset += sub_len
+                    offset += length
+        except Exception as e:
+            log.error(f"Erro ao ler articulações atuais do UR3: {e}")
+        return None
+
+
 
 
 # ── CLI de Teste ──────────────────────────────────────────────────────────────

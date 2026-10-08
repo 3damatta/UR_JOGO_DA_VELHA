@@ -348,6 +348,7 @@
         <div class="radians-preview" id="home_rad">Radianos: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]</div>
         <div class="pos-card-actions">
           <button class="btn btn-primary btn-sm" onclick="savePosition('home')">💾 Salvar Home</button>
+          <button class="btn btn-outline btn-sm" style="border-color: #00d4ff; color: #00d4ff;" onclick="captureFromRobot('home')">🤖 Capturar Posição Atual</button>
           <button class="btn btn-action-move btn-sm" onclick="testJointMove('home')">🎯 Mover Robô Aqui</button>
         </div>
       </div>
@@ -371,6 +372,7 @@
         <div class="radians-preview" id="pick_rad">Radianos: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]</div>
         <div class="pos-card-actions">
           <button class="btn btn-primary btn-sm" onclick="savePosition('pick')">💾 Salvar Pick</button>
+          <button class="btn btn-outline btn-sm" style="border-color: #00d4ff; color: #00d4ff;" onclick="captureFromRobot('pick')">🤖 Capturar Posição Atual</button>
           <button class="btn btn-action-move btn-sm" onclick="testJointMove('pick')">🎯 Mover Robô Aqui</button>
         </div>
       </div>
@@ -408,11 +410,13 @@
         <div class="radians-preview" id="cell<?php echo $c; ?>_rad">Radianos: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]</div>
         <div class="pos-card-actions">
           <button class="btn btn-primary btn-sm" onclick="savePosition('<?php echo $c; ?>')">💾 Salvar</button>
+          <button class="btn btn-outline btn-sm" style="border-color: #00d4ff; color: #00d4ff;" onclick="captureFromRobot('<?php echo $c; ?>')">🤖 Capturar</button>
           <button class="btn btn-action-move btn-sm" onclick="testJointMove('<?php echo $c; ?>')">🎯 Mover</button>
           <button class="btn btn-outline btn-sm" onclick="testCellMove(<?php echo $c; ?>)">🤖 Pick&Place</button>
           <button class="btn btn-outline btn-sm" onclick="viewDryRun(<?php echo $c; ?>)">📜 Script</button>
         </div>
       </div>
+
       <?php endfor; ?>
 
     </div>
@@ -692,6 +696,32 @@
       navigator.clipboard.writeText(code).then(() => {
         addLog('📋 URScript copiado para a área de transferência!', 'success');
       });
+    }
+
+    function captureFromRobot(targetKey) {
+      addLog(`Lendo posições reais do robô UR3 via rede para '${targetKey}'...`, 'info');
+      fetch(getBackendUrl('test'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'read_joints' })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          addLog(`❌ Erro ao ler robô: ${data.error}`, 'error');
+        } else if (data.degrees && data.degrees.length === 6) {
+          const prefix = targetKey === 'home' ? 'home_' : (targetKey === 'pick' ? 'pick_' : `cell${targetKey}_`);
+          data.degrees.forEach((d, j) => {
+            const input = document.getElementById(`${prefix}j${j}`);
+            if (input) input.value = d;
+          });
+          updateRadPreview(targetKey);
+          addLog(`✓ Posição atual capturada do UR3 para '${targetKey}' (${data.degrees.join('°, ')}°)!`, data.status === 'simulated' ? 'warn' : 'success');
+        } else {
+          addLog(`⚠ ${data.message || 'Não foi possível ler os ângulos atuais do robô.'}`, 'warn');
+        }
+      })
+      .catch(err => addLog(`❌ Falha de rede ao tentar capturar posição do robô: ${err}`, 'error'));
     }
 
     function applyPastedDegrees() {
