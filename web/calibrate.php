@@ -260,9 +260,9 @@
     const pointColors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
     const pointLabels = ['SE (1)', 'SD (2)', 'ID (3)', 'IE (4)'];
 
-    // Configura o feed bruto da câmera sem warping
+    // Configura o feed bruto da câmera sem warping via Proxy PHP (porta 8000)
     const rawFeedImg = document.getElementById('rawFeed');
-    rawFeedImg.src = `http://${window.location.hostname}:5000/api/stream/raw`;
+    rawFeedImg.src = 'api.php?action=stream_raw';
 
     function logEvent(msg, type = 'info') {
       const logsBox = document.getElementById('logsBox');

@@ -186,29 +186,36 @@ class PieceDetector:
 
     def run(self):
         idx = CAM_CFG['index']
-        log.info(f"Conectando à câmera USB (índice inicial: {idx})...")
-        self.cap = cv2.VideoCapture(idx, cv2.CAP_V4L2)
-        if not self.cap.isOpened():
-            self.cap = cv2.VideoCapture(idx)
+        log.info(f"Conectando à câmera USB (índice preferencial: {idx})...")
 
-        # Busca por índices alternativos (ex: /dev/video1, /dev/video2) se o índice padrão falhar
-        if not self.cap.isOpened():
-            for alt_idx in [1, 2, 0, 3]:
-                if alt_idx == idx:
-                    continue
-                log.warning(f"Tentando câmera no índice alternativo {alt_idx}...")
-                self.cap = cv2.VideoCapture(alt_idx, cv2.CAP_V4L2)
-                if not self.cap.isOpened():
-                    self.cap = cv2.VideoCapture(alt_idx)
-                if self.cap.isOpened():
-                    log.info(f"✓ Câmera conectada com sucesso no índice {alt_idx}!")
-                    break
+        # Testa os índices disponíveis validando a leitura real de um frame
+        self.cap = None
+        search_indices = [idx, 0, 1, 2, 3, 4]
+        seen_indices = []
+        for try_idx in search_indices:
+            if try_idx in seen_indices:
+                continue
+            seen_indices.append(try_idx)
 
-        if not self.cap.isOpened():
-            log.error("Não foi possível abrir a câmera em nenhum índice (/dev/video*). Verifique a conexão USB.")
+            for api_pref in [cv2.CAP_V4L2, cv2.CAP_ANY]:
+                cap = cv2.VideoCapture(try_idx, api_pref)
+                if cap.isOpened():
+                    # Testa se lê um frame real para ignorar nós virtuais de hardware
+                    ret, test_frame = cap.read()
+                    if ret and test_frame is not None and test_frame.size > 0:
+                        self.cap = cap
+                        log.info(f"✓ Câmera USB conectada e validada com sucesso no índice {try_idx}!")
+                        break
+                    else:
+                        cap.release()
+            if self.cap and self.cap.isOpened():
+                break
+
+        if not self.cap or not self.cap.isOpened():
+            log.error("Não foi possível capturar imagem de nenhuma câmera (/dev/video*). Verifique o cabo USB.")
             return
 
-        # Tenta aplicar MJPG para melhor suporte no Raspberry Pi
+        # Tenta aplicar MJPG para melhor desempenho no Raspberry Pi
         self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH,  CAM_CFG['width'])
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CAM_CFG['height'])

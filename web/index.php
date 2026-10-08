@@ -105,8 +105,8 @@
     let gameStatus = 'offline';
     let isPolling = true;
 
-    // Configura a URL da câmera de acordo com o host atual
-    document.getElementById('cameraFeed').src = `http://${window.location.hostname}:5000/api/stream`;
+    // Configura a URL da câmera via Proxy PHP (porta 8000) para evitar bloqueios de porta 5000
+    document.getElementById('cameraFeed').src = 'api.php?action=stream';
 
     // Função de Log Interno do Dashboard
     function logEvent(message, type = 'info') {

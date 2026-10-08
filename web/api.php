@@ -17,6 +17,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $action = $_GET['action'] ?? '';
 $python_api_url = 'http://127.0.0.1:5000/api';
 
+// Proxy de Streaming MJPEG da Câmera (Evita bloqueios de porta 5000 no navegador)
+if ($action === 'stream' || $action === 'stream_raw') {
+    if (function_exists('session_write_close')) {
+        @session_write_close();
+    }
+    header("Content-Type: multipart/x-mixed-replace; boundary=frame");
+    header("Cache-Control: no-cache, no-store, must-revalidate");
+    header("Pragma: no-cache");
+    header("Expires: 0");
+
+    $stream_endpoint = ($action === 'stream_raw') ? 'stream/raw' : 'stream';
+    $fp = @fopen("$python_api_url/$stream_endpoint", 'rb');
+    if ($fp) {
+        while (!feof($fp)) {
+            echo fread($fp, 8192);
+            @ob_flush();
+            @flush();
+        }
+        fclose($fp);
+    } else {
+        http_response_code(502);
+    }
+    exit;
+}
+
 /**
  * Função utilitária para fazer requisições HTTP para a API Python Flask.
  * Suporta cURL e fallback para stream context com suporte a timeout e ignore_errors.
